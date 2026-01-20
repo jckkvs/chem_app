@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Experiment Detail</title>
+</head>
+
+<body class="container mt-4">
+    <h1>{{ experiment.name }}</h1>
+    <p>Status: {{ experiment.status }}</p>
+    <p>Config: {{ experiment.config }}</p>
+    <h3>Metrics</h3>
+    <pre>{{ experiment.metrics }}</pre>
+    <a href="{% url 'index' %}">Back</a>
+</body>
+
+</html>

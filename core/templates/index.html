@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}ダッシュボード - ChemML{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem;">📊 ダッシュボード</h1>
+
+<!-- 概要メトリクス -->
+<div class="grid grid-4" style="margin-bottom: 2rem;">
+    <div class="metric-card">
+        <div class="metric-value" id="dataset-count">-</div>
+        <div class="metric-label">データセット</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" id="experiment-count">-</div>
+        <div class="metric-label">実験</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" id="completed-count">-</div>
+        <div class="metric-label">完了済み</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value" id="running-count">-</div>
+        <div class="metric-label">実行中</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <!-- クイック予測 -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🔮 クイック予測</h2>
+        </div>
+        <form id="quick-predict-form">
+            <div class="form-group">
+                <label class="form-label">SMILES</label>
+                <input type="text" class="form-control" id="smiles-input" placeholder="例: CCO, c1ccccc1"
+                    value="c1ccccc1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">実験を選択</label>
+                <select class="form-control" id="experiment-select">
+                    <option value="">読み込み中...</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                予測実行
+            </button>
+        </form>
+
+        <div id="prediction-result" style="margin-top: 1rem; display: none;">
+            <div class="grid grid-2">
+                <div>
+                    <h4 style="color: var(--text-muted);">予測値</h4>
+                    <div id="prediction-value" style="font-size: 2rem; font-weight: bold; color: var(--success);"></div>
+                </div>
+                <div class="mol-viewer" id="mol-viewer" style="min-height: 150px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最近の実験 -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">⚗️ 最近の実験</h2>
+            <a href="{% url 'experiments' %}" class="btn btn-sm btn-primary">すべて見る</a>
+        </div>
+        <div id="recent-experiments">
+            <div class="spinner" style="margin: 2rem auto;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 分子物性ツール -->
+<div class="card" style="margin-top: 1rem;">
+    <div class="card-header">
+        <h2 class="card-title">📋 分子物性計算</h2>
+    </div>
+    <div class="grid grid-2">
+        <div>
+            <div class="form-group">
+                <label class="form-label">SMILES入力</label>
+                <input type="text" class="form-control" id="props-smiles" placeholder="例: CC(=O)Oc1ccccc1C(=O)O"
+                    value="CC(=O)Oc1ccccc1C(=O)O">
+            </div>
+            <button onclick="calculateProperties()" class="btn btn-primary">計算</button>
+        </div>
+        <div id="properties-result">
+            <p style="color: var(--text-muted);">SMILESを入力して計算ボタンを押してください</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ダッシュボードデータ読み込み
+    async function loadDashboard() {
+        // データセット数
+        try {
+            const datasets = await apiCall('/datasets');
+            document.getElementById('dataset-count').textContent = datasets.length;
+        } catch (e) {
+            document.getElementById('dataset-count').textContent = '0';
+        }
+
+        // 実験一覧
+        try {
+            const experiments = await apiCall('/experiments');
+            document.getElementById('experiment-count').textContent = experiments.length;
+            document.getElementById('completed-count').textContent =
+                experiments.filter(e => e.status === 'COMPLETED').length;
+            document.getElementById('running-count').textContent =
+                experiments.filter(e => e.status === 'RUNNING').length;
+
+            // 実験セレクト
+            const select = document.getElementById('experiment-select');
+            const completed = experiments.filter(e => e.status === 'COMPLETED');
+            select.innerHTML = completed.length
+                ? completed.map(e => `<option value="${e.id}">${e.name}</option>`).join('')
+                : '<option value="">完了した実験がありません</option>';
+
+            // 最近の実験
+            const recent = document.getElementById('recent-experiments');
+            recent.innerHTML = experiments.slice(0, 5).map(e => `
+            <div style="display: flex; justify-content: space-between; align-items: center; 
+                        padding: 0.75rem 0; border-bottom: 1px solid var(--border);">
+                <div>
+                    <strong>${e.name}</strong>
+                    <div style="font-size: 0.875rem; color: var(--text-muted);">
+                        ${new Date(e.created_at).toLocaleString('ja-JP')}
+                    </div>
+                </div>
+                <span class="badge badge-${e.status === 'COMPLETED' ? 'success' :
+                    e.status === 'RUNNING' ? 'warning' :
+                        e.status === 'FAILED' ? 'error' : 'info'}">${e.status}</span>
+            </div>
+        `).join('') || '<p style="color: var(--text-muted);">実験がありません</p>';
+        } catch (e) {
+            document.getElementById('experiment-count').textContent = '0';
+            document.getElementById('completed-count').textContent = '0';
+            document.getElementById('running-count').textContent = '0';
+        }
+    }
+
+    // クイック予測
+    document.getElementById('quick-predict-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const smiles = document.getElementById('smiles-input').value;
+        const expId = document.getElementById('experiment-select').value;
+
+        if (!expId) {
+            showToast('実験を選択してください', 'warning');
+            return;
+        }
+
+        try {
+            const result = await apiCall(`/experiments/${expId}/predict`, {
+                method: 'POST',
+                body: JSON.stringify({ smiles })
+            });
+
+            document.getElementById('prediction-value').textContent = result.prediction.toFixed(4);
+            document.getElementById('prediction-result').style.display = 'block';
+            showMolecule(smiles, 'mol-viewer');
+            showToast('予測完了!', 'success');
+        } catch (e) {
+            // Error handled in apiCall
+        }
+    });
+
+    // 物性計算
+    async function calculateProperties() {
+        const smiles = document.getElementById('props-smiles').value;
+        const result = document.getElementById('properties-result');
+
+        try {
+            const props = await apiCall(`/molecules/${encodeURIComponent(smiles)}/properties`);
+            result.innerHTML = `
+            <table class="table" style="font-size: 0.9rem;">
+                <tr><th>分子量</th><td>${props.molecular_weight} g/mol</td></tr>
+                <tr><th>LogP</th><td>${props.logp}</td></tr>
+                <tr><th>TPSA</th><td>${props.tpsa} Å²</td></tr>
+                <tr><th>水素結合ドナー</th><td>${props.hbd}</td></tr>
+                <tr><th>水素結合アクセプター</th><td>${props.hba}</td></tr>
+                <tr><th>回転可能結合</th><td>${props.rotatable_bonds}</td></tr>
+                <tr><th>環の数</th><td>${props.num_rings}</td></tr>
+                <tr><th>原子数</th><td>${props.num_atoms}</td></tr>
+            </table>
+        `;
+        } catch (e) {
+            result.innerHTML = '<p style="color: var(--error);">計算に失敗しました</p>';
+        }
+    }
+
+    // 初期化
+    loadDashboard();
+</script>
+{% endblock %}

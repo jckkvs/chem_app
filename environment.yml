@@ -1,0 +1,23 @@
+name: chem_ml_app
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - rdkit
+  - xtb-python
+  - django
+  - djangorestframework
+  - streamlit
+  - pandas
+  - numpy
+  - scikit-learn
+  - xgboost
+  - matplotlib
+  - seaborn
+  - shap
+  - mlflow
+  - umap-learn
+  - pip
+  - pip:
+    - mutagen

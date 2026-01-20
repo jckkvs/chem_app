@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+
+{% block title %}予測 - ChemML{% endblock %}
+
+{% block extra_css %}
+<style>
+    .prediction-result {
+        background: var(--bg-hover);
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        margin-top: 1.5rem;
+    }
+
+    .prediction-value {
+        font-size: 3rem;
+        font-weight: bold;
+        color: var(--success);
+        margin: 1rem 0;
+    }
+
+    .confidence-bar {
+        width: 100%;
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        transition: width 0.3s;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem;">🔮 分子物性予測</h1>
+
+<div class="grid grid-2">
+    <!-- 予測フォーム -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">入力</h2>
+        </div>
+
+        <form id="predict-form">
+            <div class="form-group">
+                <label class="form-label">実験を選択</label>
+                <select id="experiment-select" class="form-control" required>
+                    <option value="">読み込み中...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">SMILES</label>
+                <textarea id="smiles-input" class="form-control" rows="4"
+                    placeholder="1行に1つのSMILESを入力&#10;例:&#10;CCO&#10;c1ccccc1&#10;CC(=O)O" required></textarea>
+                <small style="color: var(--text-muted);">複数のSMILESを入力するとバッチ予測になります</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                🚀 予測実行
+            </button>
+        </form>
+
+        <!-- バリデーション結果 -->
+        <div id="validation-result" style="margin-top: 1rem;"></div>
+    </div>
+
+    <!-- 予測結果 -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">結果</h2>
+        </div>
+
+        <div id="prediction-output">
+            <p style="color: var(--text-muted); text-align: center; padding: 2rem;">
+                左側のフォームから予測を実行してください
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- バッチ予測結果テーブル -->
+<div id="batch-results" style="display: none; margin-top: 2rem;">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">バッチ予測結果</h2>
+            <button onclick="downloadBatchResults()" class="btn btn-sm btn-primary">
+                📥 CSVダウンロード
+            </button>
+        </div>
+        <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+            <table class="table" id="batch-table">
+                <thead>
+                    <tr>
+                        <th>SMILES</th>
+                        <th>予測値</th>
+                        <th>状態</th>
+                    </tr>
+                </thead>
+                <tbody id="batch-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let batchResultsData = [];
+
+    // 実験一覧読み込み
+    async function loadExperiments() {
+        const select = document.getElementById('experiment-select');
+        try {
+            const experiments = await apiCall('/experiments');
+            const completed = experiments.filter(e => e.status === 'COMPLETED');
+
+            select.innerHTML = completed.length
+                ? completed.map(e => `<option value="${e.id}">${e.name} (${e.config?.model_type})</option>`).join('')
+                : '<option value="">完了した実験がありません</option>';
+        } catch (e) {
+            select.innerHTML = '<option value="">読み込みエラー</option>';
+        }
+    }
+
+    // SMILESバリデーション
+    let validateTimeout;
+    document.getElementById('smiles-input').addEventListener('input', (e) => {
+        clearTimeout(validateTimeout);
+        validateTimeout = setTimeout(async () => {
+            const smiles = e.target.value.trim();
+            if (!smiles) {
+                document.getElementById('validation-result').innerHTML = '';
+                return;
+            }
+
+            const lines = smiles.split('\n').filter(s => s.trim());
+            const resultDiv = document.getElementById('validation-result');
+
+            if (lines.length === 1) {
+                // 単一SMILES検証
+                try {
+                    const res = await apiCall(`/molecules/validate`, {
+                        method: 'POST',
+                        body: JSON.stringify({ smiles: lines[0] })
+                    });
+
+                    if (res.valid) {
+                        resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            ✅ 有効なSMILES<br>
+                            <small>正規化: <code>${res.canonical_smiles}</code></small>
+                        </div>
+                    `;
+                        // 分子構造プレビュー
+                        showMoleculePreview(lines[0]);
+                    } else {
+                        resultDiv.innerHTML = `<div class="alert alert-error">❌ 無効なSMILES</div>`;
+                    }
+                } catch (e) {
+                    resultDiv.innerHTML = `<div class="alert alert-error">検証エラー</div>`;
+                }
+            } else {
+                // バッチモード
+                resultDiv.innerHTML = `
+                <div class="alert alert-warning">
+                    📦 バッチモード: ${lines.length}件のSMILESを処理します
+                </div>
+            `;
+            }
+        }, 500);
+    });
+
+    // 分子構造プレビュー
+    function showMoleculePreview(smiles) {
+        const output = document.getElementById('prediction-output');
+        output.innerHTML = `
+        <div class="mol-viewer" id="mol-preview" style="min-height: 200px;">
+            <div class="spinner" style="margin: 2rem auto;"></div>
+        </div>
+    `;
+        showMolecule(smiles, 'mol-preview');
+    }
+
+    // 予測実行
+    document.getElementById('predict-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const expId = document.getElementById('experiment-select').value;
+        const smilesInput = document.getElementById('smiles-input').value.trim();
+
+        if (!expId || !smilesInput) {
+            showToast('入力を確認してください', 'warning');
+            return;
+        }
+
+        const smilesList = smilesInput.split('\n').filter(s => s.trim());
+        const output = document.getElementById('prediction-output');
+
+        output.innerHTML = '<div class="spinner" style="margin: 2rem auto;"></div>';
+
+        try {
+            if (smilesList.length === 1) {
+                // 単一予測
+                const result = await apiCall(`/experiments/${expId}/predict`, {
+                    method: 'POST',
+                    body: JSON.stringify({ smiles: smilesList[0] })
+                });
+
+                displaySingleResult(result, smilesList[0]);
+            } else {
+                // バッチ予測
+                const result = await apiCall(`/experiments/${expId}/batch_predict`, {
+                    method: 'POST',
+                    body: JSON.stringify({ smiles_list: smilesList })
+                });
+
+                displayBatchResults(result.predictions);
+            }
+
+            showToast('予測完了！', 'success');
+        } catch (e) {
+            output.innerHTML = `<div class="alert alert-error">予測失敗: ${e.message}</div>`;
+        }
+    });
+
+    // 単一予測結果表示
+    function displaySingleResult(result, smiles) {
+        const output = document.getElementById('prediction-output');
+        const pred = result.prediction;
+
+        output.innerHTML = `
+        <div class="prediction-result">
+            <div style="color: var(--text-muted);">予測値</div>
+            <div class="prediction-value">${pred.toFixed(4)}</div>
+            
+            ${result.confidence ? `
+                <div style="margin-top: 1rem;">
+                    <div style="color: var(--text-muted); font-size: 0.875rem;">信頼度</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${result.confidence * 100}%;"></div>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">
+                        ${(result.confidence * 100).toFixed(1)}%
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+        
+        <div class="mol-viewer" id="result-mol" style="margin-top: 1rem; min-height: 200px;"></div>
+    `;
+
+        showMolecule(smiles, 'result-mol');
+        document.getElementById('batch-results').style.display = 'none';
+    }
+
+    // バッチ予測結果表示
+    function displayBatchResults(predictions) {
+        batchResultsData = predictions;
+
+        const tbody = document.getElementById('batch-tbody');
+        tbody.innerHTML = predictions.map(p => `
+        <tr>
+            <td><code>${p.smiles}</code></td>
+            <td style="font-weight: bold; color: var(--success);">${p.prediction ? p.prediction.toFixed(4) : '-'}</td>
+            <td>${p.success ? '<span class="badge badge-success">成功</span>' : '<span class="badge badge-error">失敗</span>'}</td>
+        </tr>
+    `).join('');
+
+        document.getElementById('batch-results').style.display = 'block';
+        document.getElementById('prediction-output').innerHTML = `
+        <div class="alert alert-success">
+            ✅ ${predictions.filter(p => p.success).length} / ${predictions.length} 件の予測が成功しました
+        </div>
+    `;
+    }
+
+    // CSV ダウンロード
+    function downloadBatchResults() {
+        const csv = 'SMILES,Prediction,Success\n' +
+            batchResultsData.map(r => `${r.smiles},${r.prediction || ''},${r.success}`).join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `predictions_${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // 初期化
+    loadExperiments();
+</script>
+{% endblock %}

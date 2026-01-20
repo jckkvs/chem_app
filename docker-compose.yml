@@ -1,0 +1,65 @@
+# ChemML Platform - Docker Compose
+# Development and Production configuration
+
+services:
+  # ========== Django API Server ==========
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chemml-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./mlruns:/app/mlruns
+      - ./db.sqlite3:/app/db.sqlite3
+    environment:
+      - DJANGO_SETTINGS_MODULE=chem_ml_project.settings
+      - PYTHONUNBUFFERED=1
+      - DEBUG=False
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ========== Streamlit Frontend ==========
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: chemml-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000/api
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ========== Huey Task Queue (Background Jobs) ==========
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chemml-worker
+    command: python manage.py run_huey
+    volumes:
+      - ./uploads:/app/uploads
+      - ./mlruns:/app/mlruns
+      - ./db.sqlite3:/app/db.sqlite3
+    environment:
+      - DJANGO_SETTINGS_MODULE=chem_ml_project.settings
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+# Volumes for persistent data
+volumes:
+  uploads:
+  mlruns:

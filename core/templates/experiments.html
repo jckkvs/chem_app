@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block title %}実験管理 - ChemML{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>⚗️ 実験管理</h1>
+    <button onclick="showCreateExperimentModal()" class="btn btn-primary">
+        ➕ 新規実験
+    </button>
+</div>
+
+<!-- 実験ステータスサマリー -->
+<div class="grid grid-4" style="margin-bottom: 2rem;">
+    <div class="metric-card" style="background: linear-gradient(135deg, #48bb78, #38a169);">
+        <div class="metric-value" id="completed-exp">-</div>
+        <div class="metric-label">完了</div>
+    </div>
+    <div class="metric-card" style="background: linear-gradient(135deg, #ed8936, #dd6b20);">
+        <div class="metric-value" id="running-exp">-</div>
+        <div class="metric-label">実行中</div>
+    </div>
+    <div class="metric-card" style="background: linear-gradient(135deg, #f56565, #e53e3e);">
+        <div class="metric-value" id="failed-exp">-</div>
+        <div class="metric-label">失敗</div>
+    </div>
+    <div class="metric-card" style="background: linear-gradient(135deg, #4299e1, #3182ce);">
+        <div class="metric-value" id="pending-exp">-</div>
+        <div class="metric-label">待機中</div>
+    </div>
+</div>
+
+<!-- 実験一覧テーブル -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">実験一覧</h2>
+        <button onclick="experimentsTable.render()" class="btn btn-sm" style="background: var(--bg-hover);">
+            🔄 更新
+        </button>
+    </div>
+    <div id="experiments-table"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 実験一覧テーブル
+    const experimentsTable = new DataTable('experiments-table', [
+        { label: 'ID', getValue: e => e.id },
+        { label: '名前', getValue: e => e.name },
+        {
+            label: 'ステータス',
+            getValue: e => e.status,
+            render: e => {
+                const colors = {
+                    'COMPLETED': 'success',
+                    'RUNNING': 'warning',
+                    'FAILED': 'error',
+                    'PENDING': 'info'
+                };
+                return `<span class="badge badge-${colors[e.status] || 'info'}">${e.status}</span>`;
+            }
+        },
+        { label: 'モデル', getValue: e => e.config?.model_type || '-' },
+        { label: 'タスクタイプ', getValue: e => e.config?.task_type_mode || '-' },
+        {
+            label: '作成日時',
+            getValue: e => e.created_at,
+            render: e => new Date(e.created_at).toLocaleString('ja-JP')
+        },
+        {
+            label: 'アクション',
+            getValue: () => '',
+            render: e => `
+            <button onclick="viewExperiment(${e.id})" class="btn btn-sm" style="background: var(--bg-hover);">
+                👁️ 詳細
+            </button>
+            ${e.status === 'COMPLETED' ? `
+                <button onclick="downloadModel(${e.id})" class="btn btn-sm btn-primary">
+                    📥 DL
+                </button>
+            ` : ''}
+        `
+        }
+    ], async () => {
+        const exps = await apiCall('/experiments');
+
+        // ステータスカウント更新
+        document.getElementById('completed-exp').textContent = exps.filter(e => e.status === 'COMPLETED').length;
+        document.getElementById('running-exp').textContent = exps.filter(e => e.status === 'RUNNING').length;
+        document.getElementById('failed-exp').textContent = exps.filter(e => e.status === 'FAILED').length;
+        document.getElementById('pending-exp').textContent = exps.filter(e => e.status === 'PENDING').length;
+
+        return exps;
+    });
+
+    // 初期レンダリングとリアルタイム更新
+    experimentsTable.render();
+    window.liveUpdater = new LiveUpdater(() => experimentsTable.render(), 10000);
+    window.liveUpdater.start();
+
+    // 実験作成モーダル
+    async function showCreateExperimentModal() {
+        const datasets = await apiCall('/datasets');
+
+        const modal = new ModalDialog();
+        modal.show('🧪 新規実験作成', `
+        <form id="create-exp-form" onsubmit="handleCreateExperiment(event)">
+            <div class="form-group">
+                <label class="form-label">実験名</label>
+                <input type="text" name="name" class="form-control" placeholder="例: LogP Prediction v1" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">データセット</label>
+                <select name="dataset_id" class="form-control" required>
+                    ${datasets.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">タスクタイプ</label>
+                <select name="task_type_mode" class="form-control">
+                    <option value="smiles_only">① SMILES → 物性予測</option>
+                    <option value="tabular_only">② 表データ → 特性予測</option>
+                    <option value="mixture">③ 混合物（SMILES＋割合） → 物性予測</option>
+                    <option value="smiles_tabular">④ SMILES＋表データ → 物性予測</option>
+                </select>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">モデル</label>
+                    <select name="model_type" class="form-control">
+                        <option value="lightgbm">LightGBM</option>
+                        <option value="xgboost">XGBoost</option>
+                        <option value="random_forest">Random Forest</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">CV分割数</label>
+                    <input type="number" name="cv_folds" class="form-control" value="5" min="2" max="10">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">目的物性</label>
+                <select name="target_property" class="form-control">
+                    <option value="general">汎用</option>
+                    <option value="glass_transition">ガラス転移温度(Tg)</option>
+                    <option value="elastic_modulus">弾性率</option>
+                    <option value="refractive_index">屈折率</option>
+                    <option value="solubility">溶解度・LogP</option>
+                    <option value="thermal_conductivity">熱伝導率</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">特徴量（複数選択可）</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.25rem;">
+                        <input type="checkbox" name="features" value="rdkit" checked> RDKit
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.25rem;">
+                        <input type="checkbox" name="features" value="xtb"> XTB
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.25rem;">
+                        <input type="checkbox" name="features" value="uma"> UMA
+                    </label>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                🚀 実験開始
+            </button>
+        </form>
+    `);
+    }
+
+    // 実験作成処理
+    async function handleCreateExperiment(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        // チェックボックスの features を配列に変換
+        const features = Array.from(form.querySelectorAll('input[name="features"]:checked'))
+            .map(cb => cb.value);
+
+        const payload = {
+            name: formData.get('name'),
+            dataset_id: parseInt(formData.get('dataset_id')),
+            task_type_mode: formData.get('task_type_mode'),
+            model_type: formData.get('model_type'),
+            cv_folds: parseInt(formData.get('cv_folds')),
+            target_property: formData.get('target_property'),
+            features,
+            task_type: 'regression'
+        };
+
+        try {
+            await apiCallWithCSRF('/experiments', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            showToast('実験を開始しました！', 'success');
+            document.querySelector('.modal-overlay').remove();
+            experimentsTable.render();
+        } catch (e) {
+            // Error handled
+        }
+    }
+
+    // 実験詳細表示
+    async function viewExperiment(id) {
+        const modal = new ModalDialog();
+        modal.show('実験詳細', '<div class="spinner" style="margin: 2rem auto;"></div>');
+
+        try {
+            const exp = await apiCall(`/experiments/${id}`);
+
+            let content = `
+            <div class="grid grid-2" style="margin-bottom: 1rem;">
+                <div>
+                    <h4>基本情報</h4>
+                    <table class="table" style="font-size: 0.9rem;">
+                        <tr><th>ID</th><td>${exp.id}</td></tr>
+                        <tr><th>名前</th><td>${exp.name}</td></tr>
+                        <tr><th>ステータス</th><td><span class="badge badge-${exp.status === 'COMPLETED' ? 'success' : exp.status === 'RUNNING' ? 'warning' : 'error'}">${exp.status}</span></td></tr>
+                        <tr><th>モデル</th><td>${exp.config?.model_type}</td></tr>
+                        <tr><th>タスクタイプ</th><td>${exp.config?.task_type_mode}</td></tr>
+                    </table>
+                </div>
+                <div>
+                    <h4>パラメータ</h4>
+                    <table class="table" style="font-size: 0.9rem;">
+                        <tr><th>CV分割</th><td>${exp.config?.cv_folds}</td></tr>
+                        <tr><th>物性</th><td>${exp.config?.target_property}</td></tr>
+                        <tr><th>特徴量</th><td>${exp.config?.features?.join(', ')}</td></tr>
+                    </table>
+                </div>
+            </div>
+        `;
+
+            if (exp.metrics && exp.status === 'COMPLETED') {
+                content += `
+                <h4>メトリクス</h4>
+                <div class="grid grid-3" style="margin-bottom: 1rem;">
+            `;
+
+                for (const [key, value] of Object.entries(exp.metrics)) {
+                    if (typeof value === 'number') {
+                        content += `
+                        <div style="background: var(--bg-hover); padding: 1rem; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary);">${value.toFixed(4)}</div>
+                            <div style="font-size: 0.875rem; color: var(--text-muted);">${key.toUpperCase()}</div>
+                        </div>
+                    `;
+                    }
+                }
+
+                content += '</div>';
+            }
+
+            document.querySelector('.modal-content div:last-child').innerHTML = content;
+        } catch (e) {
+            document.querySelector('.modal-content div:last-child').innerHTML =
+                '<p style="color: var(--error);">読み込みエラー</p>';
+        }
+    }
+
+    // モデルダウンロード
+    function downloadModel(id) {
+        window.location.href = `${API_URL}/experiments/${id}/download`;
+    }
+</script>
+{% endblock %}

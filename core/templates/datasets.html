@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}データセット管理 - ChemML{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>📂 データセット管理</h1>
+    <button onclick="showUploadModal()" class="btn btn-primary">
+        ➕ 新規アップロード
+    </button>
+</div>
+
+<!-- データセット一覧テーブル -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">データセット一覧</h2>
+    </div>
+    <div id="datasets-table"></div>
+</div>
+
+<!-- アップロードモーダル（動的生成） -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // データセット一覧テーブル
+    const datasetsTable = new DataTable('datasets-table', [
+        { label: 'ID', getValue: d => d.id },
+        { label: '名前', getValue: d => d.name },
+        { label: 'サンプル数', getValue: d => d.num_samples || '-' },
+        { label: 'SMILESカラム', getValue: d => d.smiles_col },
+        { label: 'ターゲットカラム', getValue: d => d.target_col },
+        {
+            label: '作成日時',
+            getValue: d => d.created_at,
+            render: d => new Date(d.created_at).toLocaleString('ja-JP')
+        },
+        {
+            label: 'アクション',
+            getValue: () => '',
+            render: d => `
+            <button onclick="viewDataset(${d.id})" class="btn btn-sm" style="background: var(--bg-hover);">
+                👁️ 表示
+            </button>
+            <button onclick="deleteDataset(${d.id})" class="btn btn-sm btn-danger">
+                🗑️ 削除
+            </button>
+        `
+        }
+    ], async () => {
+        return await apiCall('/datasets');
+    });
+
+    datasetsTable.render();
+
+    // アップロードモーダル表示
+    function showUploadModal() {
+        const modal = new ModalDialog();
+        modal.show('データセットアップロード', `
+        <form id="upload-form" onsubmit="handleUpload(event)">
+            <div class="form-group">
+                <label class="form-label">データセット名</label>
+                <input type="text" name="name" class="form-control" placeholder="例: Solubility Dataset" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">CSVファイル</label>
+                <div id="drop-zone" style="
+                    border: 2px dashed var(--border);
+                    border-radius: 8px;
+                    padding: 2rem;
+                    text-align: center;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                " onclick="document.getElementById('file-input').click()">
+                    <p>📁 ファイルをドラッグ＆ドロップ<br>またはクリックして選択</p>
+                    <input type="file" id="file-input" name="file" accept=".csv" style="display: none;" required>
+                </div>
+                <div id="file-name" style="margin-top: 0.5rem; color: var(--text-muted);"></div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">SMILESカラム</label>
+                    <input type="text" name="smiles_col" class="form-control" value="SMILES" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ターゲットカラム</label>
+                    <input type="text" name="target_col" class="form-control" value="target" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                アップロード
+            </button>
+        </form>
+    `);
+
+        // ドラッグ&ドロップ初期化
+        setTimeout(() => {
+            const fileInput = document.getElementById('file-input');
+            const fileName = document.getElementById('file-name');
+
+            initFileUpload('drop-zone', 'file-input', (file) => {
+                fileName.textContent = `選択: ${file.name}`;
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    fileName.textContent = `選択: ${e.target.files[0].name}`;
+                }
+            });
+        }, 100);
+    }
+
+    // アップロード処理
+    async function handleUpload(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        try {
+            const res = await fetch(`${API_URL}/datasets`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!res.ok) throw new Error('Upload failed');
+
+            showToast('アップロード成功！', 'success');
+            document.querySelector('.modal-overlay').remove();
+            datasetsTable.render();
+        } catch (e) {
+            showToast('アップロード失敗: ' + e.message, 'error');
+        }
+    }
+
+    // データセット表示
+    function viewDataset(id) {
+        const modal = new ModalDialog();
+        modal.show('データセット詳細', `
+        <div class="spinner" style="margin: 2rem auto;"></div>
+    `);
+
+        fetch(`${API_URL}/datasets/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                const content = `
+                <div class="grid grid-2" style="margin-bottom: 1rem;">
+                    <div>
+                        <strong>ID:</strong> ${data.id}<br>
+                        <strong>名前:</strong> ${data.name}<br>
+                        <strong>サンプル数:</strong> ${data.num_samples || '-'}
+                    </div>
+                    <div>
+                        <strong>SMILESカラム:</strong> ${data.smiles_col}<br>
+                        <strong>ターゲットカラム:</strong> ${data.target_col}<br>
+                        <strong>作成日時:</strong> ${new Date(data.created_at).toLocaleString('ja-JP')}
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <a href="${data.file_path}" download class="btn btn-primary">
+                        📥 ダウンロード
+                    </a>
+                </div>
+            `;
+                document.querySelector('.modal-content div:last-child').innerHTML = content;
+            })
+            .catch(e => {
+                document.querySelector('.modal-content div:last-child').innerHTML =
+                    '<p style="color: var(--error);">読み込みエラー</p>';
+            });
+    }
+
+    // データセット削除
+    async function deleteDataset(id) {
+        if (!confirm('本当に削除しますか？')) return;
+
+        try {
+            await apiCallWithCSRF(`/datasets/${id}`, { method: 'DELETE' });
+            showToast('削除しました', 'success');
+            datasetsTable.render();
+        } catch (e) {
+            // Error handled in apiCallWithCSRF
+        }
+    }
+</script>
+{% endblock %}

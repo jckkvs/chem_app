@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}サーバーエラー - ChemML{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 4rem 2rem;">
+    <div style="font-size: 6rem; margin-bottom: 1rem;">⚠️</div>
+    <h1 style="font-size: 3rem; color: var(--error); margin-bottom: 1rem;">500</h1>
+    <h2 style="margin-bottom: 1rem;">サーバーエラーが発生しました</h2>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">
+        申し訳ございません。問題が発生しました。<br>
+        しばらくしてから再度お試しください。
+    </p>
+    <a href="{% url 'index' %}" class="btn btn-primary">🏠 ダッシュボードへ戻る</a>
+
+    <div
+        style="margin-top: 3rem; padding: 1rem; background: var(--bg-card); border-radius: 8px; display: inline-block;">
+        <p style="color: var(--text-muted); font-size: 0.875rem;">
+            問題が続く場合は、管理者にお問い合わせください。<br>
+            エラー発生時刻: <code id="error-time"></code>
+        </p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('error-time').textContent = new Date().toLocaleString('ja-JP');
+</script>
+{% endblock %}

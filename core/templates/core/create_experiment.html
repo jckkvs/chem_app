@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>New Experiment</title>
+</head>
+
+<body class="container mt-4">
+    <h1>New Experiment</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label>Name: <input type="text" name="name" value="My Expr"></label><br>
+        <label>Dataset:
+            <select name="dataset">
+                {% for ds in datasets %}
+                <option value="{{ ds.id }}">{{ ds.name }}</option>
+                {% endfor %}
+            </select>
+        </label><br>
+
+        <h3>Features</h3>
+        <label><input type="checkbox" name="features" value="rdkit" checked> RDKit</label><br>
+        <label><input type="checkbox" name="features" value="xtb"> XTB (Quantum)</label><br>
+        <label><input type="checkbox" name="features" value="uma"> UMA (Metric UMAP)</label><br>
+
+        <h3>Model</h3>
+        <select name="model_type">
+            <option value="random_forest">Random Forest</option>
+            <option value="xgboost">XGBoost</option>
+        </select>
+        <select name="task_type">
+            <option value="regression">Regression</option>
+            <option value="classification">Classification</option>
+        </select>
+
+        <button type="submit" class="btn btn-primary mt-3">Start Training</button>
+    </form>
+</body>
+
+</html>

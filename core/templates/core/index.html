@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chem ML Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-4">
+    <h1>Chemical ML Dashboard</h1>
+    <a href="{% url 'upload' %}" class="btn btn-primary">Upload Dataset</a>
+    <a href="{% url 'create_experiment' %}" class="btn btn-success">New Experiment</a>
+    
+    <h2 class="mt-4">Experiments</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Dataset</th>
+                <th>Created</th>
+                <th>Metrics</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for exp in experiments %}
+            <tr>
+                <td>{{ exp.name }}</td>
+                <td>{{ exp.status }}</td>
+                <td>{{ exp.dataset.name }}</td>
+                <td>{{ exp.created_at }}</td>
+                <td>{{ exp.metrics }}</td>
+                <td><a href="{% url 'experiment_detail' pk=exp.pk %}">Detail</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
