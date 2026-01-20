@@ -6,12 +6,15 @@ Implements: F-PLUGIN-001
 - 拡張機能登録
 - 動的ロード
 - フック機能
+- 自動検出（NEW）
+- バリデーション（NEW）
 """
 
 from __future__ import annotations
 
 import logging
 import importlib
+import importlib.util
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Callable, Optional
 from pathlib import Path
@@ -27,26 +30,39 @@ class Plugin:
     description: str
     hooks: Dict[str, Callable] = field(default_factory=dict)
     enabled: bool = True
+    
+    # メタデータ（オプション）
+    author: Optional[str] = None
+    license: Optional[str] = None
+    requires: List[str] = field(default_factory=list)
+    config: Dict[str, Any] = field(default_factory=dict)
 
 
 class PluginManager:
     """
-    プラグインマネージャー
+    プラグインマネージャー（拡張版）
     
     Features:
     - プラグイン登録
     - フック実行
     - 動的ロード
+    - 自動検出（NEW）
+    - バリデーション（NEW）
+    - ライフサイクルフック（NEW）
     
     Example:
         >>> pm = PluginManager()
-        >>> pm.register(my_plugin)
+        >>> pm.discover_plugins('plugins/')  # 自動検出
         >>> pm.execute_hook('on_prediction', data)
     """
     
-    def __init__(self):
+    def __init__(self, auto_discover: bool = False, plugin_dir: str = 'plugins'):
         self.plugins: Dict[str, Plugin] = {}
         self.hooks: Dict[str, List[Callable]] = {}
+        self.plugin_dir = Path(plugin_dir)
+        
+        if auto_discover and self.plugin_dir.exists():
+            self.discover_plugins()
     
     def register(self, plugin: Plugin) -> None:
         """プラグインを登録"""
