@@ -201,8 +201,8 @@ class SmartPreprocessor(BaseEstimator, TransformerMixin):
         info = ColumnTypeInfo()
         
         for col in X.columns:
-            # SMILESカラムはスキップ
-            if col.upper() in ['SMILES', 'SMILES_CANONICAL', 'MOL']:
+            # SMILESカラムはスキップ（文字列型の場合のみチェック）
+            if isinstance(col, str) and col.upper() in ['SMILES', 'SMILES_CANONICAL', 'MOL']:
                 continue
             
             dtype = X[col].dtype

@@ -21,7 +21,7 @@ class MLPipelineTests(SimpleTestCase):
         tracker = MagicMock(spec=MLTracker)
         tracker.start_run.return_value.__enter__.return_value = None
         
-        pipeline = MLPipeline(config, tracker=tracker)
+        pipeline = MLPipeline(config=config, tracker=tracker, generate_plots=False)
         metrics = pipeline.train(X, y)
         
         self.assertIn('cv_mean_score', metrics)
