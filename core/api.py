@@ -699,3 +699,194 @@ def _generate_shap_image(model, X: pd.DataFrame) -> Optional[str]:
     except Exception as e:
         logger.warning(f"SHAP image generation failed: {e}")
         return None
+"""
+LLM Assistant API Endpoints - Append to core/api.py
+"""
+
+# --- LLM Assistant Endpoints ---
+
+
+class LLMFeatureSuggestionIn(Schema):
+    """迚ｹ蠕ｴ驥城∈謚槭い繝峨ヰ繧､繧ｹ繝ｪ繧ｯ繧ｨ繧ｹ繝・""
+
+    n_samples: int
+    task_type: str = "regression"  # or "classification"
+    target_property: str
+    available_features: Optional[List[str]] = None
+
+
+class LLMFeatureSuggestionOut(Schema):
+    """迚ｹ蠕ｴ驥城∈謚槭い繝峨ヰ繧､繧ｹ繝ｬ繧ｹ繝昴Φ繧ｹ"""
+
+    recommended_features: List[str]
+    reasoning: str
+    alternative_features: List[str]
+    considerations: List[str]
+
+
+class LLMAnalysisPlanIn(Schema):
+    """隗｣譫舌・繝ｩ繝ｳ謠先｡医Μ繧ｯ繧ｨ繧ｹ繝・""
+
+    problem_description: str
+    n_samples: int
+    task_type: str = "regression"
+    target_property: str
+
+
+class LLMAnalysisPlanOut(Schema):
+    """隗｣譫舌・繝ｩ繝ｳ謠先｡医Ξ繧ｹ繝昴Φ繧ｹ"""
+
+    objective: str
+    recommended_approach: str
+    feature_engineering_steps: List[str]
+    model_suggestions: List[str]
+    validation_strategy: str
+    potential_challenges: List[str]
+
+
+class LLMInterpretResultsIn(Schema):
+    """邨先棡隗｣驥医Μ繧ｯ繧ｨ繧ｹ繝・""
+
+    metrics: Dict[str, float]
+    model_type: str = "unknown"
+
+
+class LLMInterpretResultsOut(Schema):
+    """邨先棡隗｣驥医Ξ繧ｹ繝昴Φ繧ｹ"""
+
+    interpretation: str
+
+
+class LLMAskIn(Schema):
+    """閾ｪ逕ｱ蠖｢蠑讐&A繝ｪ繧ｯ繧ｨ繧ｹ繝・""
+
+    question: str
+    context: Optional[str] = None
+
+
+class LLMAskOut(Schema):
+    """閾ｪ逕ｱ蠖｢蠑讐&A繝ｬ繧ｹ繝昴Φ繧ｹ"""
+
+    question: str
+    answer: str
+    llm_available: bool
+
+
+@api.post("/llm/suggest-features", response={200: LLMFeatureSuggestionOut, 400: ErrorOut})
+def llm_suggest_features(request, payload: LLMFeatureSuggestionIn):
+    """
+    LLM繧｢繧ｷ繧ｹ繧ｿ繝ｳ繝・ 迚ｹ蠕ｴ驥城∈謚槭・繧｢繝峨ヰ繧､繧ｹ
+
+    繝・・繧ｿ繧ｻ繝・ヨ諠・ｱ縺ｨ莠域ｸｬ蟇ｾ雎｡縺ｮ迚ｩ諤ｧ縺九ｉ縲・←蛻・↑迚ｹ蠕ｴ驥上ｒ謗ｨ螂ｨ縺励∪縺吶・
+    """
+    try:
+        from core.services.llm import ChemMLAssistant
+
+        assistant = ChemMLAssistant()
+
+        dataset_info = {
+            "n_samples": payload.n_samples,
+            "task_type": payload.task_type,
+            "target_property": payload.target_property,
+        }
+
+        suggestion = assistant.suggest_features(
+            dataset_info=dataset_info,
+            target_property=payload.target_property,
+            available_features=payload.available_features,
+        )
+
+        return {
+            "recommended_features": suggestion.recommended_features,
+            "reasoning": suggestion.reasoning,
+            "alternative_features": suggestion.alternative_features,
+            "considerations": suggestion.considerations,
+        }
+
+    except Exception as e:
+        logger.error(f"LLM feature suggestion failed: {e}")
+        return 400, {"detail": str(e)}
+
+
+@api.post("/llm/suggest-plan", response={200: LLMAnalysisPlanOut, 400: ErrorOut})
+def llm_suggest_analysis_plan(request, payload: LLMAnalysisPlanIn):
+    """
+    LLM繧｢繧ｷ繧ｹ繧ｿ繝ｳ繝・ 隗｣譫舌・繝ｩ繝ｳ縺ｮ謠先｡・
+
+    蝠城｡瑚ｨ倩ｿｰ縺ｨ繝・・繧ｿ繧ｻ繝・ヨ諠・ｱ縺九ｉ縲・←蛻・↑隗｣譫先姶逡･繧呈署譯医＠縺ｾ縺吶・
+    """
+    try:
+        from core.services.llm import ChemMLAssistant
+
+        assistant = ChemMLAssistant()
+
+        dataset_info = {
+            "n_samples": payload.n_samples,
+            "task_type": payload.task_type,
+            "target_property": payload.target_property,
+        }
+
+        plan = assistant.suggest_analysis_plan(
+            problem_description=payload.problem_description, dataset_info=dataset_info
+        )
+
+        return {
+            "objective": plan.objective,
+            "recommended_approach": plan.recommended_approach,
+            "feature_engineering_steps": plan.feature_engineering_steps,
+            "model_suggestions": plan.model_suggestions,
+            "validation_strategy": plan.validation_strategy,
+            "potential_challenges": plan.potential_challenges,
+        }
+
+    except Exception as e:
+        logger.error(f"LLM analysis plan failed: {e}")
+        return 400, {"detail": str(e)}
+
+
+@api.post("/llm/interpret-results", response={200: LLMInterpretResultsOut, 400: ErrorOut})
+def llm_interpret_results(request, payload: LLMInterpretResultsIn):
+    """
+    LLM繧｢繧ｷ繧ｹ繧ｿ繝ｳ繝・ 繝｢繝・Ν邨先棡縺ｮ隗｣驥・
+
+    隧穂ｾ｡謖・ｨ吶°繧峨∫ｵ先棡縺ｮ隗｣驥医→謾ｹ蝟・｡医ｒ謠先｡医＠縺ｾ縺吶・
+    """
+    try:
+        from core.services.llm import ChemMLAssistant
+
+        assistant = ChemMLAssistant()
+
+        interpretation = assistant.interpret_results(
+            metrics=payload.metrics, model_type=payload.model_type
+        )
+
+        return {"interpretation": interpretation}
+
+    except Exception as e:
+        logger.error(f"LLM interpretation failed: {e}")
+        return 400, {"detail": str(e)}
+
+
+@api.post("/llm/ask", response={200: LLMAskOut, 400: ErrorOut})
+def llm_ask(request, payload: LLMAskIn):
+    """
+    LLM繧｢繧ｷ繧ｹ繧ｿ繝ｳ繝・ 閾ｪ逕ｱ蠖｢蠑讐&A
+
+    蛹門ｭｦ讖滓｢ｰ蟄ｦ鄙偵↓髢｢縺吶ｋ雉ｪ蝠上↓蝗樒ｭ斐＠縺ｾ縺吶・
+    """
+    try:
+        from core.services.llm import ChemMLAssistant
+
+        assistant = ChemMLAssistant()
+
+        answer = assistant.ask(question=payload.question, context=payload.context)
+
+        return {
+            "question": payload.question,
+            "answer": answer,
+            "llm_available": assistant.is_available,
+        }
+
+    except Exception as e:
+        logger.error(f"LLM Q&A failed: {e}")
+        return 400, {"detail": str(e)}
