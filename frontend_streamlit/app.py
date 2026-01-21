@@ -92,14 +92,15 @@ def main():
     
     # メインタブ
     tabs = st.tabs([
-        "📂 Datasets", 
-        "⚗️ Experiments", 
-        "📊 Analysis", 
+        "📂 Datasets",
+        "⚗️ Experiments",
+        "📊 Analysis",
         "🔬 Molecule Viewer",
         "📦 Batch Predict",
-        "⚖️ Comparison"
+        "⚖️ Comparison",
+        "🤖 LLM Assistant",  # NEW
     ])
-    
+
     with tabs[0]:
         render_datasets()
     with tabs[1]:
@@ -112,7 +113,9 @@ def main():
         render_batch_predict()
     with tabs[5]:
         render_comparison()
-    
+    with tabs[6]:  # NEW
+        render_llm_assistant()
+
     # 自動更新
     if auto_refresh:
         time.sleep(10)
