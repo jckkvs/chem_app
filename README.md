@@ -1,6 +1,24 @@
 # Chemical ML Platform
 
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-4.2%2B-green.svg)](https://www.djangoproject.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Tests](https://github.com/jckkvs/chem_app/actions/workflows/test.yml/badge.svg)](https://github.com/jckkvs/chem_app/actions/workflows/test.yml)
+[![Lint](https://github.com/jckkvs/chem_app/actions/workflows/lint.yml/badge.svg)](https://github.com/jckkvs/chem_app/actions/workflows/lint.yml)
+
 機械学習を使った分子物性予測プラットフォーム
+
+## 📚 ドキュメント
+
+- **[完全リファレンス](REFERENCE.md)** - 全API、全メソッド、全引数を網羅（生成AI時代向け）
+- **[サンプルコード](examples/)** - 初心者向け実行可能な例
+- **[開発者ガイド](CONTRIBUTING.md)** - プロジェクトへの貢献方法
+- **[アーキテクチャ](ARCHITECTURE.md)** - システム設計と拡張ポイント
+- **[プラグイン開発](docs/PLUGIN_DEVELOPMENT.md)** - プラグインの作り方
+- **[API設計](docs/API_GUIDELINES.md)** - REST API設計標準
+- **[データスキーマ](docs/DATA_SCHEMA.md)** - データベース構造
+
+---
 
 ## 特徴
 
@@ -91,6 +109,19 @@ python manage.py runserver
 
 ## 使用例
 
+### 簡単なサンプル（初心者向け）
+```bash
+# サンプルを実行
+python examples/01_simple_descriptors.py   # 分子記述子計算
+python examples/02_basic_ml.py             # 機械学習
+python examples/03_api_usage.py            # REST API
+python examples/04_visualization.py        # 可視化
+```
+
+**詳細**: [examples/README.md](examples/README.md)
+
+---
+
 ### API経由で分子物性取得
 ```bash
 curl http://localhost:8000/api/molecules/CCO/properties
@@ -123,10 +154,62 @@ core/
 ## テスト実行
 
 ```bash
+# 全テスト実行
 python -m pytest core/tests/ -v
+
+# カバレッジ付き
+pytest core/tests/ -v --cov=core --cov-report=html
+
+# CI/CD（自動実行）
+# GitHub Actions が自動テスト・Lintを実行
 ```
+
+---
+
+## 開発
+
+### 開発用依存関係
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+### コード品質チェック
+
+```bash
+# フォーマット
+black core/
+isort core/
+
+# Lint
+flake8 core/
+
+# 型チェック
+mypy core/
+```
+
+---
+
+## 貢献
+
+プロジェクトへの貢献を歓迎します！
+
+1. [CONTRIBUTING.md](CONTRIBUTING.md)を読む
+2. Issueで提案・バグ報告
+3. Pull Requestを作成
+
+詳細な開発ガイドは[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
+
+---
 
 ## ライセンス
 
 MIT
 
+---
+
+## 🔗 リンク
+
+- **GitHub**: https://github.com/jckkvs/chem_app
+- **完全リファレンス**: [REFERENCE.md](REFERENCE.md)
+- **ドキュメント一覧**: [上記参照](#📚-ドキュメント)
