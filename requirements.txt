@@ -40,3 +40,6 @@ pytest-cov>=4.1
 # Optional: TARTE (Transformer tabular features)
 # pip install tarte-ai
 
+# Optional: GPT4All (Lightweight LLM Assistant)
+# pip install gpt4all
+
