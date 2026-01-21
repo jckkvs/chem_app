@@ -11,7 +11,7 @@ Implements: F-ENSEMBLE-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Any, Optional, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -75,8 +75,8 @@ class EnsembleModel:
     def _create_default_models(self) -> List[Any]:
         """デフォルトモデル"""
         from lightgbm import LGBMRegressor
-        from xgboost import XGBRegressor
         from sklearn.ensemble import RandomForestRegressor
+        from xgboost import XGBRegressor
         
         return [
             LGBMRegressor(n_estimators=100, random_state=42, verbose=-1),
@@ -100,9 +100,9 @@ class EnsembleModel:
     
     def _fit_stacking(self, X: pd.DataFrame, y: pd.Series) -> None:
         """スタッキング"""
-        from sklearn.model_selection import cross_val_predict
         from sklearn.linear_model import Ridge
-        
+        from sklearn.model_selection import cross_val_predict
+
         # メタ特徴量生成
         meta_features = []
         for model in self.models_:

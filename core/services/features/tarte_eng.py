@@ -16,7 +16,7 @@ Implements: F-TARTE-001
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Any, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd

@@ -15,7 +15,7 @@ import os
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 import numpy as np
 
@@ -180,7 +180,7 @@ class ComputationalChemistry:
     ) -> CalculationResult:
         """XTBで構造最適化"""
         from rdkit import Chem
-        
+
         # XYZ形式で出力
         xyz_content = self._mol_to_xyz(mol)
         
@@ -233,7 +233,7 @@ class ComputationalChemistry:
         try:
             from rdkit import Chem
             from rdkit.Chem import AllChem
-            
+
             # まず構造最適化
             opt_result = self.optimize(smiles, method='mmff')
             if not opt_result.success or opt_result.coordinates is None:

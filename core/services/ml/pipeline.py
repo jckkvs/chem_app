@@ -18,29 +18,34 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
-from typing import Dict, Any, Optional, Literal, List, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import joblib
+import lightgbm as lgb
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.model_selection import cross_validate, learning_curve
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import (
-    mean_squared_error, r2_score, mean_absolute_error,
-    accuracy_score, f1_score, precision_score, recall_score,
+    accuracy_score,
+    f1_score,
+    mean_absolute_error,
+    mean_squared_error,
+    precision_score,
+    r2_score,
+    recall_score,
 )
-from xgboost import XGBRegressor, XGBClassifier
-import lightgbm as lgb
+from sklearn.model_selection import cross_validate, learning_curve
+from xgboost import XGBClassifier, XGBRegressor
 
-from .tracking import MLTracker
-from .preprocessor import SmartPreprocessor, PreprocessorFactory
-from .applicability_domain import ApplicabilityDomain, ADResult
-from .uncertainty import UncertaintyQuantifier
-from ..vis.shap_eng import SHAPEngine
 from ..vis.pdp_eng import PDPEngine
 from ..vis.plots import PlotEngine
+from ..vis.shap_eng import SHAPEngine
+from .applicability_domain import ADResult, ApplicabilityDomain
+from .preprocessor import PreprocessorFactory, SmartPreprocessor
+from .tracking import MLTracker
+from .uncertainty import UncertaintyQuantifier
 
 logger = logging.getLogger(__name__)
 

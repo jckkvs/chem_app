@@ -13,7 +13,7 @@ from __future__ import annotations
 import base64
 import io
 import logging
-from typing import List, Dict, Optional, Union, Any
+from typing import Any, Dict, List, Optional, Union
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, Draw

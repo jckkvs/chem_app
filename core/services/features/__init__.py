@@ -35,22 +35,26 @@
 - SELFIESEncoder: SMILES⇔SELFIES変換
 """
 
+# 高度な特徴量選択
+from .advanced_selectors import (
+    BorutaSelector,
+    EnsembleFeatureSelector,
+    MRMRSelector,
+    PermutationImportanceSelector,
+    select_features,
+)
+
+# Applicability Domain分析
+from .applicability_domain import (
+    ADResult,
+    ApplicabilityDomainAnalyzer,
+    DistanceBasedAD,
+    LOFBasedAD,
+    check_applicability_domain,
+)
+
 # 基底クラス
 from .base import BaseFeatureExtractor
-
-# 従来の抽出器
-from .rdkit_eng import RDKitFeatureExtractor
-from .xtb_eng import XTBFeatureExtractor
-from .uma_eng import UMAFeatureExtractor
-from .tarte_eng import TarteFeatureExtractor, is_tarte_available
-
-# スマート特徴量エンジン
-from .smart_feature_engine import (
-    SmartFeatureEngine,
-    FeatureConfig,
-    FeatureGenerationResult,
-    generate_smart_features,
-)
 
 # データセット分析
 from .dataset_analyzer import (
@@ -59,55 +63,12 @@ from .dataset_analyzer import (
     analyze_dataset,
 )
 
-# 事前学習モデル
-from .pretrained_embeddings import (
-    PretrainedEmbeddingEngine,
-    get_pretrained_embeddings,
-)
-
 # 物性別プリセット
 from .descriptor_presets import (
     MATERIAL_PRESETS,
     DescriptorPreset,
-    list_presets,
     get_preset,
-)
-
-# 高度な特徴量選択
-from .advanced_selectors import (
-    BorutaSelector,
-    MRMRSelector,
-    PermutationImportanceSelector,
-    EnsembleFeatureSelector,
-    select_features,
-)
-
-# 骨格・化学空間分析
-from .scaffold_analysis import (
-    ScaffoldAnalyzer,
-    ScaffoldProfile,
-    ChemicalSpaceAnalyzer,
-    ScaffoldSplitter,
-    analyze_scaffolds,
-    scaffold_split,
-)
-
-# Applicability Domain分析
-from .applicability_domain import (
-    ApplicabilityDomainAnalyzer,
-    ADResult,
-    DistanceBasedAD,
-    LOFBasedAD,
-    check_applicability_domain,
-)
-
-# 類似度検索
-from .similarity_search import (
-    MolecularSimilaritySearch,
-    SimilaritySearchResult,
-    ActivityCliffDetector,
-    search_similar,
-    detect_activity_cliffs,
+    list_presets,
 )
 
 # 等変GNN (3D)
@@ -117,23 +78,6 @@ from .equivariant_gnn import (
     get_equivariant_embeddings,
 )
 
-# 自己教師あり学習
-from .ssl_embeddings import (
-    SelfSupervisedEmbeddingEngine,
-    GROVEREmbedding,
-    MolCLREmbedding,
-    GraphMVPEmbedding,
-    get_ssl_embeddings,
-)
-
-# SELFIES
-from .selfies_support import (
-    SELFIESEncoder,
-    is_selfies_available,
-    smiles_to_selfies,
-    selfies_to_smiles,
-)
-
 # 分子生成
 from .molecular_generation import (
     ConditionalMolecularGenerator,
@@ -141,6 +85,62 @@ from .molecular_generation import (
     InverseDesignPipeline,
     generate_molecules,
 )
+
+# 事前学習モデル
+from .pretrained_embeddings import (
+    PretrainedEmbeddingEngine,
+    get_pretrained_embeddings,
+)
+
+# 従来の抽出器
+from .rdkit_eng import RDKitFeatureExtractor
+
+# 骨格・化学空間分析
+from .scaffold_analysis import (
+    ChemicalSpaceAnalyzer,
+    ScaffoldAnalyzer,
+    ScaffoldProfile,
+    ScaffoldSplitter,
+    analyze_scaffolds,
+    scaffold_split,
+)
+
+# SELFIES
+from .selfies_support import (
+    SELFIESEncoder,
+    is_selfies_available,
+    selfies_to_smiles,
+    smiles_to_selfies,
+)
+
+# 類似度検索
+from .similarity_search import (
+    ActivityCliffDetector,
+    MolecularSimilaritySearch,
+    SimilaritySearchResult,
+    detect_activity_cliffs,
+    search_similar,
+)
+
+# スマート特徴量エンジン
+from .smart_feature_engine import (
+    FeatureConfig,
+    FeatureGenerationResult,
+    SmartFeatureEngine,
+    generate_smart_features,
+)
+
+# 自己教師あり学習
+from .ssl_embeddings import (
+    GraphMVPEmbedding,
+    GROVEREmbedding,
+    MolCLREmbedding,
+    SelfSupervisedEmbeddingEngine,
+    get_ssl_embeddings,
+)
+from .tarte_eng import TarteFeatureExtractor, is_tarte_available
+from .uma_eng import UMAFeatureExtractor
+from .xtb_eng import XTBFeatureExtractor
 
 __all__ = [
     # 基底

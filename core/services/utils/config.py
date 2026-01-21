@@ -16,12 +16,12 @@ Implements: F-CONFIG-001
 
 from __future__ import annotations
 
-import os
 import json
 import logging
+import os
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
-from dataclasses import dataclass, field, asdict
 
 logger = logging.getLogger(__name__)
 

@@ -16,15 +16,15 @@ import logging
 import mimetypes
 import os
 from datetime import datetime
-from typing import List, Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import matplotlib.pyplot as plt
 import mlflow
 import pandas as pd
 from django.conf import settings
-from django.http import HttpResponse, Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
-from ninja import NinjaAPI, File, UploadedFile, Form, Schema
+from ninja import File, Form, NinjaAPI, Schema, UploadedFile
 
 from .models import Dataset, Experiment
 
@@ -43,8 +43,9 @@ api = NinjaAPI(
 @api.get("/health")
 def health_check(request):
     """ヘルスチェック（運用監視用）"""
-    from django.db import connection
     import sys
+
+    from django.db import connection
     
     status = {"status": "healthy", "version": "2.0"}
     
@@ -265,7 +266,7 @@ def similarity_search(request, payload: SimilaritySearchIn):
     try:
         from rdkit import Chem
         from rdkit.Chem import AllChem, DataStructs
-        
+
         # クエリ分子のフィンガープリント生成
         query_mol = Chem.MolFromSmiles(payload.query_smiles)
         if query_mol is None:
@@ -498,7 +499,7 @@ def batch_predict_experiment(request, experiment_id: int, payload: BatchPredicti
     try:
         from core.services.features.rdkit_eng import RDKitFeatureExtractor
         from core.services.ml.tracking import MLTracker
-        
+
         # 特徴量抽出
         extractor = RDKitFeatureExtractor()
         X = extractor.transform(payload.smiles_list)
@@ -580,8 +581,8 @@ def predict_experiment(request, experiment_id: int, payload: PredictionIn):
     
     try:
         from core.services.features.rdkit_eng import RDKitFeatureExtractor
-        from core.services.features.xtb_eng import XTBFeatureExtractor
         from core.services.features.uma_eng import UMAFeatureExtractor
+        from core.services.features.xtb_eng import XTBFeatureExtractor
         from core.services.ml.tracking import MLTracker
         from core.services.vis.shap_eng import SHAPEngine
         
@@ -670,6 +671,7 @@ def _generate_shap_image(model, X: pd.DataFrame) -> Optional[str]:
     """SHAP Force Plotを生成"""
     try:
         import shap
+
         from core.services.vis.shap_eng import SHAPEngine
         
         shap_eng = SHAPEngine(max_samples=1)

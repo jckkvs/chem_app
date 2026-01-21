@@ -11,8 +11,8 @@ Implements: F-ADMET-001
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, Any, Optional, List
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 

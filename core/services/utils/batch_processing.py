@@ -17,11 +17,11 @@ Implements: F-BATCH-001
 from __future__ import annotations
 
 import logging
-import time
-from typing import List, Dict, Optional, Any, Callable, Iterable, Generator
-from dataclasses import dataclass, field
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Generator, Iterable, List, Optional
 
 import numpy as np
 import pandas as pd

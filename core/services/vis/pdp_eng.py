@@ -11,7 +11,7 @@ Implements: F-010
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Optional, Union, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np

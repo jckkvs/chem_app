@@ -10,13 +10,13 @@ Implements: F-CLIENT-001
 
 from __future__ import annotations
 
-import logging
 import json
-from dataclasses import dataclass
-from typing import Dict, Any, Optional, List
-import urllib.request
-import urllib.parse
+import logging
 import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

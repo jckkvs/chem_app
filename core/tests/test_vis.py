@@ -1,14 +1,16 @@
-from django.test import SimpleTestCase
-import pandas as pd
-import matplotlib.pyplot as plt
-from core.services.vis.shap_eng import SHAPEngine
+from unittest.mock import MagicMock, patch
 
+import matplotlib.pyplot as plt
+import pandas as pd
+from django.test import SimpleTestCase
+
+from core.services.vis.pdp_eng import PDPEngine
 
 # File path was core/services/vis/plots.py, so class is in core.services.vis.plots 
 # Wait, I wrote `core/services/vis/plots.py`.
 from core.services.vis.plots import PlotEngine
-from core.services.vis.pdp_eng import PDPEngine
-from unittest.mock import MagicMock, patch
+from core.services.vis.shap_eng import SHAPEngine
+
 
 class VisTests(SimpleTestCase):
     def test_plot_engine(self):

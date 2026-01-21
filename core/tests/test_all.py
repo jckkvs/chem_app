@@ -4,8 +4,8 @@
 全モジュールのユニットテスト
 """
 
-import unittest
 import sys
+import unittest
 
 
 class TestFeatures(unittest.TestCase):
@@ -99,7 +99,7 @@ class TestConfig(unittest.TestCase):
     """設定モジュールテスト"""
     
     def test_config_manager(self):
-        from core.services.config import ConfigManager, AppConfig
+        from core.services.config import AppConfig, ConfigManager
         config = ConfigManager.get_default()
         self.assertIsInstance(config, AppConfig)
         self.assertEqual(config.model.model_type, "lightgbm")

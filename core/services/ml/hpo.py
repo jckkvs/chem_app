@@ -10,10 +10,10 @@ Implements: F-HPOPT-001
 
 from __future__ import annotations
 
+import itertools
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Callable, Optional
-import itertools
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 

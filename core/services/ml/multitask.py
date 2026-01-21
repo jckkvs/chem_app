@@ -11,12 +11,12 @@ Implements: F-MULTITASK-001
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-from sklearn.multioutput import MultiOutputRegressor, MultiOutputClassifier
 from sklearn.base import BaseEstimator
+from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class MultiTaskLearner:
     def _create_base_model(self) -> BaseEstimator:
         """ベースモデルを作成"""
         if self.base_model == 'lightgbm':
-            from lightgbm import LGBMRegressor, LGBMClassifier
+            from lightgbm import LGBMClassifier, LGBMRegressor
             if self.task_type == 'regression':
                 return LGBMRegressor(
                     n_estimators=self.n_estimators,
@@ -107,7 +107,7 @@ class MultiTaskLearner:
             )
         
         elif self.base_model == 'xgboost':
-            from xgboost import XGBRegressor, XGBClassifier
+            from xgboost import XGBClassifier, XGBRegressor
             if self.task_type == 'regression':
                 return XGBRegressor(
                     n_estimators=self.n_estimators,
@@ -121,7 +121,7 @@ class MultiTaskLearner:
             )
         
         else:  # random_forest
-            from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+            from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
             if self.task_type == 'regression':
                 return RandomForestRegressor(
                     n_estimators=self.n_estimators,

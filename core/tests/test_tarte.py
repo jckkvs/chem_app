@@ -6,15 +6,16 @@ TARTE特徴量抽出器のテスト
 - tarte-aiインストール時: 各モードの動作を確認
 """
 import unittest
-from unittest.mock import patch, MagicMock
-import pandas as pd
+from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pandas as pd
 from django.test import SimpleTestCase
 
 from core.services.features.tarte_eng import (
     TarteFeatureExtractor,
-    is_tarte_available,
     _check_tarte_available,
+    is_tarte_available,
 )
 
 

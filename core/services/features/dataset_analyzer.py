@@ -16,9 +16,9 @@ Implements: F-ANALYZER-001
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple, Set
 from collections import Counter
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -215,7 +215,7 @@ class DatasetAnalyzer:
         
         from rdkit import Chem
         from rdkit.Chem import Descriptors, Lipinski
-        
+
         # サンプリング
         if len(smiles_list) > self.sample_size:
             indices = np.random.choice(len(smiles_list), self.sample_size, replace=False)

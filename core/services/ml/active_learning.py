@@ -11,7 +11,7 @@ Implements: F-AL-001
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Tuple, Literal
+from typing import List, Literal, Optional, Tuple
 
 import numpy as np
 import pandas as pd

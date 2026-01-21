@@ -20,18 +20,18 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Set, Tuple, Any, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
+from .dataset_analyzer import DatasetAnalyzer, DatasetProfile
 from .descriptor_presets import (
-    MATERIAL_PRESETS, 
-    DescriptorPreset, 
+    MATERIAL_PRESETS,
+    DescriptorPreset,
     get_preset,
     list_presets,
 )
-from .dataset_analyzer import DatasetAnalyzer, DatasetProfile
 from .pretrained_embeddings import PretrainedEmbeddingEngine
 from .rdkit_eng import RDKitFeatureExtractor
 

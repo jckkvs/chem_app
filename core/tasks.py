@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import django
 from django.conf import settings
@@ -55,11 +55,12 @@ def extract_features_smiles_only(
     SmartFeatureEngineを使用して物性別の最適記述子を選択
     """
     import pandas as pd
+
     from core.services.features import (
-        SmartFeatureEngine,
         RDKitFeatureExtractor,
-        XTBFeatureExtractor,
+        SmartFeatureEngine,
         UMAFeatureExtractor,
+        XTBFeatureExtractor,
     )
     from core.services.features.descriptor_selector import DescriptorSelector
     
@@ -149,6 +150,7 @@ def extract_features_tabular_only(
     TARTEが利用可能な場合は埋め込みも追加
     """
     import pandas as pd
+
     from core.services.features.tarte_eng import TarteFeatureExtractor, is_tarte_available
     from core.services.ml.preprocessor import SmartPreprocessor
     
@@ -190,10 +192,11 @@ def extract_features_mixture(
     - smiles_1, smiles_2, ... : 各成分のSMILES
     - ratio_1, ratio_2, ... : 各成分の割合（合計1.0）
     """
-    import pandas as pd
     import numpy as np
+    import pandas as pd
+
     from core.services.features import RDKitFeatureExtractor
-    
+
     # SMILESカラムと割合カラムを特定
     smiles_cols = [c for c in df.columns if c.lower().startswith('smiles')]
     ratio_cols = [c for c in df.columns if c.lower().startswith('ratio')]
@@ -245,6 +248,7 @@ def extract_features_smiles_tabular(
     分子記述子と表データ特徴量を結合
     """
     import pandas as pd
+
     from core.services.features import SmartFeatureEngine
     from core.services.features.tarte_eng import TarteFeatureExtractor, is_tarte_available
     
@@ -307,10 +311,11 @@ def run_training_task(experiment_id: int):
     
     try:
         import pandas as pd
+
         from core.models import Experiment
         from core.services.ml.pipeline import MLPipeline
         from core.services.ml.tracking import MLTracker
-        
+
         # 実験取得
         exp = Experiment.objects.get(id=experiment_id)
         exp.status = 'RUNNING'

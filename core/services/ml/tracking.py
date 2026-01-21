@@ -11,7 +11,7 @@ Implements: F-005
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import mlflow
 from sklearn.base import BaseEstimator

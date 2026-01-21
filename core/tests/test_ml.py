@@ -1,9 +1,12 @@
-from django.test import SimpleTestCase
 from unittest.mock import MagicMock, patch
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+from django.test import SimpleTestCase
+
 from core.services.ml.pipeline import MLPipeline
 from core.services.ml.tracking import MLTracker
+
 
 class MLPipelineTests(SimpleTestCase):
     def test_train_regression(self):

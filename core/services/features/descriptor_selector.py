@@ -15,14 +15,14 @@ Implements: F-DESC-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Literal, Tuple, Any
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from scipy import stats
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.feature_selection import mutual_info_regression, mutual_info_classif
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 
 logger = logging.getLogger(__name__)
 

@@ -11,14 +11,14 @@ Implements: F-AUTOML-001
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, Optional, Literal, Callable
+from typing import Any, Callable, Dict, Literal, Optional
 
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import cross_val_score
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from xgboost import XGBRegressor, XGBClassifier
-import lightgbm as lgb
+from xgboost import XGBClassifier, XGBRegressor
 
 try:
     import optuna

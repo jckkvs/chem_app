@@ -17,13 +17,13 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 import umap
+from sklearn.preprocessing import StandardScaler
 
 from .base import BaseFeatureExtractor
 from .rdkit_eng import RDKitFeatureExtractor

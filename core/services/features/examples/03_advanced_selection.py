@@ -11,8 +11,8 @@
 - カスタマイズしたSmartFeatureEngine
 """
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 # =============================================================================
 # Part 1: 高度な特徴量選択
@@ -23,8 +23,8 @@ print("Part 1: mRMR特徴量選択")
 print("=" * 60)
 
 from core.services.features import (
-    RDKitFeatureExtractor,
     MRMRSelector,
+    RDKitFeatureExtractor,
     select_features,
 )
 
@@ -76,8 +76,8 @@ print("Part 3: Applicability Domain (予測信頼性)")
 print("=" * 60)
 
 from core.services.features.applicability_domain import (
-    check_applicability_domain,
     ApplicabilityDomainAnalyzer,
+    check_applicability_domain,
 )
 
 # トレーニングデータ
@@ -104,7 +104,7 @@ print("\n" + "=" * 60)
 print("Part 4: SmartFeatureEngineのカスタマイズ")
 print("=" * 60)
 
-from core.services.features import SmartFeatureEngine, FeatureConfig
+from core.services.features import FeatureConfig, SmartFeatureEngine
 
 # 詳細設定でカスタマイズ
 config = FeatureConfig(

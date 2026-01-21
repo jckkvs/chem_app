@@ -26,10 +26,10 @@ Implements: F-EGNN-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Tuple, Any, Union
-from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -200,7 +200,7 @@ class SchNetEmbedding(BaseEquivariantEmbedding):
         
         import schnetpack as spk
         import torch
-        
+
         # 事前学習モデルのロード
         # schnetpackのモデルハブから取得、またはカスタムモデル
         try:

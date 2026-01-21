@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import KFold, StratifiedKFold, GroupKFold
+from sklearn.model_selection import GroupKFold, KFold, StratifiedKFold
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class CrossValidator:
     ) -> CVResult:
         """クロスバリデーション実行"""
         from sklearn.base import clone
-        from sklearn.metrics import r2_score, mean_squared_error
+        from sklearn.metrics import mean_squared_error, r2_score
         
         splitter = self._get_splitter(groups, smiles)
         

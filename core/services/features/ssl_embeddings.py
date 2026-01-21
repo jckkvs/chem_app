@@ -26,10 +26,10 @@ Implements: F-SSL-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Tuple, Any, Union
-from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -241,7 +241,7 @@ class MolCLREmbedding(BaseSelfSupervisedModel):
         
         import torch
         import torch.nn as nn
-        
+
         # GINベースのエンコーダー（MolCLRの構造）
         class GINEncoder(nn.Module):
             def __init__(self, hidden_dim=512, num_layers=5):
@@ -366,7 +366,7 @@ class GraphMVPEmbedding(BaseSelfSupervisedModel):
         
         import torch
         import torch.nn as nn
-        
+
         # 簡易2Dエンコーダー
         class Simple2DEncoder(nn.Module):
             def __init__(self, hidden_dim=300):

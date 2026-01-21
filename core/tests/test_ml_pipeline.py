@@ -13,15 +13,16 @@ Implements: T-PIPE-001
 - Django testing documentation
 """
 
-from django.test import SimpleTestCase
-import tempfile
 import os
-import pandas as pd
-import numpy as np
-from unittest.mock import patch, MagicMock
+import tempfile
+from unittest.mock import MagicMock, patch
 
-from core.services.ml.pipeline import MLPipeline
+import numpy as np
+import pandas as pd
+from django.test import SimpleTestCase
+
 from core.services.ml.applicability_domain import ADResult
+from core.services.ml.pipeline import MLPipeline
 
 
 class MLPipelineBasicTests(SimpleTestCase):

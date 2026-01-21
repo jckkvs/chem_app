@@ -14,7 +14,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional, Literal
+from typing import Any, Dict, Literal, Optional
 
 import joblib
 import numpy as np

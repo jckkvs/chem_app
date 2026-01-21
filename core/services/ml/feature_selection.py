@@ -12,15 +12,15 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
 import numpy as np
 import pandas as pd
 from sklearn.feature_selection import (
-    SelectKBest,
-    mutual_info_regression,
     RFE,
+    SelectKBest,
     VarianceThreshold,
+    mutual_info_regression,
 )
 
 logger = logging.getLogger(__name__)

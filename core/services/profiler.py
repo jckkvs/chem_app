@@ -10,12 +10,12 @@ Implements: F-PROFILE-001
 
 from __future__ import annotations
 
+import functools
 import logging
 import time
-import functools
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Callable
 from contextlib import contextmanager
+from dataclasses import dataclass, field
+from typing import Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

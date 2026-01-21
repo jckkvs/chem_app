@@ -11,13 +11,13 @@ Implements: F-CHEMSPACE-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Literal, Tuple, Any
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.manifold import TSNE
 import umap
+from sklearn.manifold import TSNE
 
 logger = logging.getLogger(__name__)
 

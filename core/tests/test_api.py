@@ -1,9 +1,12 @@
-from django.test import TestCase, Client
-from core.models import Dataset, Experiment
-from django.core.files.uploadedfile import SimpleUploadedFile
+import json
 import os
 import shutil
-import json
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase
+
+from core.models import Dataset, Experiment
+
 
 class ChemMLApiTests(TestCase):
     def setUp(self):

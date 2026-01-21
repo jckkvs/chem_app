@@ -16,12 +16,12 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import List, Optional, Set, Dict, Any
+from typing import Any, Dict, List, Optional, Set
 
 import numpy as np
 import pandas as pd
 from rdkit import Chem
-from rdkit.Chem import Descriptors, AllChem, Lipinski
+from rdkit.Chem import AllChem, Descriptors, Lipinski
 
 from .base import BaseFeatureExtractor
 

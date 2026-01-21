@@ -3,9 +3,10 @@ API Endpoint Tests
 
 新規追加したAPIエンドポイントの自動テスト
 """
+import json
+
 import pytest
 from django.test import Client
-import json
 
 
 class TestMoleculeEndpoints:

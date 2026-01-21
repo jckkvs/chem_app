@@ -19,13 +19,13 @@ Implements: F-SELECT-002
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Tuple, Literal
 from dataclasses import dataclass, field
+from typing import Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.feature_selection import mutual_info_regression, mutual_info_classif
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 
 logger = logging.getLogger(__name__)
 
@@ -321,9 +321,9 @@ class PermutationImportanceSelector:
     
     def fit(self, X: pd.DataFrame, y: pd.Series) -> 'PermutationImportanceSelector':
         """Permutation Importanceを計算"""
-        from sklearn.model_selection import cross_val_score
         from sklearn.inspection import permutation_importance
-        
+        from sklearn.model_selection import cross_val_score
+
         # モデル準備
         if self.model is None:
             if self.task_type == 'regression':

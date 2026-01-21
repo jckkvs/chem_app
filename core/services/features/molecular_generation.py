@@ -20,9 +20,9 @@ Implements: F-DIFFUSION-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Tuple, Any, Literal
-from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -119,7 +119,7 @@ class SimpleMolecularVAE(BaseMolecularGenerator):
         
         import torch
         import torch.nn as nn
-        
+
         # エンコーダー
         class Encoder(nn.Module):
             def __init__(self, vocab_size, hidden_dim, latent_dim):

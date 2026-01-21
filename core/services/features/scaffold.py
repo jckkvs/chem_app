@@ -11,9 +11,9 @@ Implements: F-SCAFFOLD-001
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, List, Set, Optional
 from collections import Counter
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 

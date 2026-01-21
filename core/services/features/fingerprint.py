@@ -11,7 +11,7 @@ Implements: F-FP-001
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Literal, Dict, Any
+from typing import Any, Dict, List, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -52,9 +52,8 @@ class FingerprintCalculator:
     def calculate(self, smiles: str) -> Optional[np.ndarray]:
         """単一SMILESのFPを計算"""
         try:
-            from rdkit import Chem
+            from rdkit import Chem, DataStructs
             from rdkit.Chem import AllChem, MACCSkeys, rdMolDescriptors
-            from rdkit import DataStructs
             
             mol = Chem.MolFromSmiles(smiles)
             if mol is None:
@@ -113,9 +112,8 @@ class FingerprintCalculator:
     def tanimoto_similarity(self, smiles1: str, smiles2: str) -> float:
         """Tanimoto類似度"""
         try:
-            from rdkit import Chem
+            from rdkit import Chem, DataStructs
             from rdkit.Chem import AllChem
-            from rdkit import DataStructs
             
             mol1 = Chem.MolFromSmiles(smiles1)
             mol2 = Chem.MolFromSmiles(smiles2)

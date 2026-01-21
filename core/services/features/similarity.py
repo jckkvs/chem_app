@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -216,9 +216,8 @@ class SimilarMoleculeSearcher:
         Tanimoto類似度（Morgan FP）を計算
         """
         try:
-            from rdkit import Chem
+            from rdkit import Chem, DataStructs
             from rdkit.Chem import AllChem
-            from rdkit import DataStructs
             
             mol1 = Chem.MolFromSmiles(smiles1)
             mol2 = Chem.MolFromSmiles(smiles2)

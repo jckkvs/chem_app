@@ -16,8 +16,8 @@ Implements: F-VALID-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Any, Union, Callable
 from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd

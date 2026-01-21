@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class ReactionPredictor:
         try:
             from rdkit import Chem
             from rdkit.Chem import AllChem
-            
+
             # 反応物を分割
             reactants = reactants_smiles.split('.')
             

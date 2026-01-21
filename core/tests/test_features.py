@@ -1,10 +1,13 @@
-from django.test import SimpleTestCase
-from unittest.mock import patch, MagicMock
-import pandas as pd
+from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pandas as pd
+from django.test import SimpleTestCase
+
 from core.services.features.rdkit_eng import RDKitFeatureExtractor
-from core.services.features.xtb_eng import XTBFeatureExtractor
 from core.services.features.uma_eng import UMAFeatureExtractor
+from core.services.features.xtb_eng import XTBFeatureExtractor
+
 
 class RDKitTests(SimpleTestCase):
     def test_transform_benzene(self):

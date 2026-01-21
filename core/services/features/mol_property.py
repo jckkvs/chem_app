@@ -11,8 +11,8 @@ Implements: F-MOLPROP-001
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, asdict
-from typing import Dict, Any, Optional, List
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ class MolecularPropertyCalculator:
         """
         try:
             from rdkit import Chem
-            from rdkit.Chem import Descriptors, Lipinski, AllChem, rdMolDescriptors
+            from rdkit.Chem import AllChem, Descriptors, Lipinski, rdMolDescriptors
             from rdkit.Chem.QED import qed
             
             mol = Chem.MolFromSmiles(smiles)

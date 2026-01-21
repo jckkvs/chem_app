@@ -5,10 +5,11 @@
 """
 
 import numpy as np
+
 from core.services.features import RDKitFeatureExtractor
 from core.services.ml.pipeline import MLPipeline
-from core.services.vis.shap_eng import SHAPVisualizer
 from core.services.vis.chem_space import ChemSpaceVisualizer
+from core.services.vis.shap_eng import SHAPVisualizer
 
 # サンプルデータ
 smiles_list = [

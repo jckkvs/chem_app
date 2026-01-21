@@ -11,7 +11,7 @@ Implements: F-BASE-001
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import pandas as pd
 

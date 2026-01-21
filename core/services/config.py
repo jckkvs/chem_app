@@ -10,12 +10,12 @@ Implements: F-CONFIG-001
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-import json
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

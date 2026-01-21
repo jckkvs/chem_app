@@ -11,16 +11,16 @@ Implements: F-SPLIT-001
 from __future__ import annotations
 
 import logging
-from typing import List, Tuple, Optional, Iterator
+from typing import Iterator, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import (
-    train_test_split,
+    GroupKFold,
     KFold,
     StratifiedKFold,
-    GroupKFold,
     TimeSeriesSplit,
+    train_test_split,
 )
 
 logger = logging.getLogger(__name__)

@@ -25,12 +25,12 @@ Applicability Domainは「モデルが信頼できる範囲」を定義。
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Tuple, Literal
 from dataclasses import dataclass, field
+from typing import Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from sklearn.neighbors import NearestNeighbors, LocalOutlierFactor
+from sklearn.neighbors import LocalOutlierFactor, NearestNeighbors
 from sklearn.preprocessing import StandardScaler
 
 logger = logging.getLogger(__name__)

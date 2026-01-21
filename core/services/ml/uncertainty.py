@@ -11,7 +11,7 @@ Implements: F-UQ-001
 from __future__ import annotations
 
 import logging
-from typing import Tuple, Optional, List, Literal, Any
+from typing import Any, List, Literal, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -117,8 +117,8 @@ class UncertaintyQuantifier:
     def _fit_ensemble(self, X: np.ndarray, y: np.ndarray) -> None:
         """Diverse Ensemble"""
         from lightgbm import LGBMRegressor
-        from xgboost import XGBRegressor
         from sklearn.ensemble import RandomForestRegressor
+        from xgboost import XGBRegressor
         
         models = [
             LGBMRegressor(n_estimators=self.n_estimators, random_state=self.random_state, verbose=-1),

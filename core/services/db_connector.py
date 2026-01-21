@@ -10,10 +10,10 @@ Implements: F-DB-001
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
-import json
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,8 @@ class ChEMBLConnector:
     ) -> List[CompoundRecord]:
         """SMILES類似検索"""
         try:
-            import urllib.request
             import urllib.parse
+            import urllib.request
             
             encoded_smiles = urllib.parse.quote(smiles)
             url = f"{self.BASE_URL}/similarity/{encoded_smiles}/{int(similarity*100)}.json?limit={limit}"
@@ -123,8 +123,8 @@ class PubChemConnector:
     def search_by_name(self, name: str, limit: int = 5) -> List[CompoundRecord]:
         """名前で検索"""
         try:
-            import urllib.request
             import urllib.parse
+            import urllib.request
             
             encoded_name = urllib.parse.quote(name)
             url = f"{self.BASE_URL}/compound/name/{encoded_name}/property/CanonicalSMILES,MolecularWeight/JSON"

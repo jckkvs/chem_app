@@ -15,8 +15,8 @@ Implements: F-SIMILARITY-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Tuple, Literal
 from dataclasses import dataclass, field
+from typing import Dict, List, Literal, Optional, Tuple
 
 import numpy as np
 import pandas as pd

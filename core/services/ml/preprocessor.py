@@ -15,25 +15,25 @@ Implements: F-PREP-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Literal, Any, Tuple, Union
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import (
-    StandardScaler, 
-    PowerTransformer, 
-    QuantileTransformer,
-    RobustScaler, 
-    MinMaxScaler,
-    OneHotEncoder, 
-    OrdinalEncoder,
     LabelEncoder,
+    MinMaxScaler,
+    OneHotEncoder,
+    OrdinalEncoder,
+    PowerTransformer,
+    QuantileTransformer,
+    RobustScaler,
+    StandardScaler,
 )
-from sklearn.impute import SimpleImputer, KNNImputer
 
 logger = logging.getLogger(__name__)
 

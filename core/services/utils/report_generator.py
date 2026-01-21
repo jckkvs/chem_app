@@ -16,12 +16,12 @@ Implements: F-REPORT-001
 
 from __future__ import annotations
 
+import json
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, field
-import json
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -154,9 +154,7 @@ class ReportGenerator:
         y_pred: np.ndarray,
     ) -> Dict[str, float]:
         """メトリクスを計算"""
-        from sklearn.metrics import (
-            r2_score, mean_absolute_error, mean_squared_error
-        )
+        from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
         
         return {
             'R2': r2_score(y_true, y_pred),

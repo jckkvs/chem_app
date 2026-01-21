@@ -12,12 +12,12 @@ Implements: F-PLUGIN-001
 
 from __future__ import annotations
 
-import logging
 import importlib
 import importlib.util
+import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Callable, Optional
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

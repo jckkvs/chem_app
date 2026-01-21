@@ -24,8 +24,8 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Any, Type
 from enum import Enum
+from typing import Any, Dict, List, Optional, Type
 
 import numpy as np
 import pandas as pd
@@ -178,8 +178,8 @@ class ChemBERTaWrapper(BaseEmbeddingModel):
     
     def is_available(self) -> bool:
         try:
-            import transformers
             import torch
+            import transformers
             return True
         except ImportError:
             return False
@@ -188,8 +188,8 @@ class ChemBERTaWrapper(BaseEmbeddingModel):
         """モデルを遅延ロード"""
         if self._model is None:
             try:
-                from transformers import AutoTokenizer, AutoModel
                 import torch
+                from transformers import AutoModel, AutoTokenizer
                 
                 self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
                 self._model = AutoModel.from_pretrained(self.model_name)

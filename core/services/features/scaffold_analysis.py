@@ -16,9 +16,9 @@ Implements: F-SCAFFOLD-001
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Optional, Tuple, Set
-from dataclasses import dataclass, field
 from collections import Counter
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -320,7 +320,7 @@ class ScaffoldSplitter:
         
         from rdkit import Chem
         from rdkit.Chem.Scaffolds import MurckoScaffold
-        
+
         # 骨格→インデックスのマッピング
         scaffold_to_indices: Dict[str, List[int]] = {}
         

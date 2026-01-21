@@ -3,11 +3,11 @@ Django Views - Chemical ML Platform
 
 テンプレートベースビュー + PWA対応
 """
-from django.shortcuts import render
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.http import require_GET
 import json
 
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render
+from django.views.decorators.http import require_GET
 
 # ========== ページビュー ==========
 

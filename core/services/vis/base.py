@@ -12,10 +12,10 @@ Implements: F-VIS-BASE-001
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Literal
-from pathlib import Path
 import logging
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Any, Dict, Literal, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -150,8 +150,8 @@ class BaseVisualizer(ABC):
         Returns:
             Base64エンコード文字列
         """
-        import io
         import base64
+        import io
         
         buffer = io.BytesIO()
         

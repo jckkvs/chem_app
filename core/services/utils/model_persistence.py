@@ -15,15 +15,15 @@ Implements: F-MODEL-001
 
 from __future__ import annotations
 
-import os
+import hashlib
 import json
 import logging
-import hashlib
+import os
+import pickle
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, List
-from dataclasses import dataclass, asdict
-import pickle
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 

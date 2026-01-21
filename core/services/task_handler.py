@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Dict, Any, Optional, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -199,7 +199,7 @@ class UnifiedTaskHandler:
     ) -> pd.DataFrame:
         """③ 混合物の特徴量抽出"""
         from .features.mixture_eng import MixtureComponent
-        
+
         # グループ化キーを探す（同じ混合物の成分をグループ化）
         group_col = self._find_column(df, ['mixture_id', 'group', 'sample_id', 'id'])
         

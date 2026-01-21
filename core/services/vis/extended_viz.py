@@ -16,10 +16,10 @@ Implements: F-VISEXT-001
 
 from __future__ import annotations
 
-import logging
-from typing import List, Dict, Optional, Any, Tuple
-import io
 import base64
+import io
+import logging
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -419,7 +419,7 @@ def create_interactive_report(
     
     # 予測結果
     if y_true is not None and y_pred is not None:
-        from sklearn.metrics import r2_score, mean_absolute_error
+        from sklearn.metrics import mean_absolute_error, r2_score
         r2 = r2_score(y_true, y_pred)
         mae = mean_absolute_error(y_true, y_pred)
         

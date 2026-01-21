@@ -10,16 +10,16 @@ Implements: F-NOTIFY-001
 
 from __future__ import annotations
 
-import logging
 import json
+import logging
 import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
-from datetime import datetime
-import urllib.request
 import urllib.error
+import urllib.request
+from dataclasses import dataclass, field
+from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

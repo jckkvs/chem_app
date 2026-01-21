@@ -1,14 +1,17 @@
-from django.test import TestCase, Client
+import os
+import shutil
+import tempfile
+from unittest.mock import MagicMock, patch
+
+import mlflow
+import numpy as np
+import pandas as pd
+from django.test import Client, TestCase
+
 from core.models import Dataset, Experiment
 from core.services.features.uma_eng import UMAFeatureExtractor
 from core.services.ml.tracking import MLTracker
-import pandas as pd
-import numpy as np
-import os
-import tempfile
-import mlflow
-import shutil
-from unittest.mock import patch, MagicMock
+
 
 class Phase4Tests(TestCase):
     def setUp(self):

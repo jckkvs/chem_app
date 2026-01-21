@@ -10,11 +10,11 @@ Implements: F-AUTODOC-001
 
 from __future__ import annotations
 
-import logging
 import inspect
+import logging
 from dataclasses import dataclass
-from typing import Dict, List, Any, Optional, Callable
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

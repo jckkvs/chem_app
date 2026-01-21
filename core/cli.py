@@ -11,13 +11,13 @@ ChemML コマンドラインインターフェース
 from __future__ import annotations
 
 import argparse
-import sys
 import json
+import sys
 from pathlib import Path
 from typing import Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -116,9 +116,9 @@ def create_parser() -> argparse.ArgumentParser:
 
 def cmd_predict(args: argparse.Namespace) -> int:
     """予測コマンド"""
-    from core.services.utils import load_model
     from core.services.features import SmartFeatureEngine
-    
+    from core.services.utils import load_model
+
     # SMILESを取得
     if args.smiles:
         smiles_list = [args.smiles]
@@ -162,7 +162,7 @@ def cmd_predict(args: argparse.Namespace) -> int:
 def cmd_extract(args: argparse.Namespace) -> int:
     """特徴量抽出コマンド"""
     from core.services.features import SmartFeatureEngine
-    
+
     # データ読み込み
     df = pd.read_csv(args.input)
     smiles_list = df[args.smiles_column].tolist()
@@ -182,11 +182,12 @@ def cmd_extract(args: argparse.Namespace) -> int:
 
 def cmd_train(args: argparse.Namespace) -> int:
     """学習コマンド"""
+    from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+    from sklearn.model_selection import cross_val_score
+
     from core.services.features import SmartFeatureEngine
     from core.services.utils import save_model
-    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-    from sklearn.model_selection import cross_val_score
-    
+
     # データ読み込み
     df = pd.read_csv(args.input)
     
@@ -245,7 +246,7 @@ def cmd_train(args: argparse.Namespace) -> int:
 def cmd_analyze(args: argparse.Namespace) -> int:
     """分析コマンド"""
     from core.services.features import analyze_dataset, analyze_scaffolds
-    
+
     # データ読み込み
     df = pd.read_csv(args.input)
     smiles_list = df[args.smiles_column].tolist()
