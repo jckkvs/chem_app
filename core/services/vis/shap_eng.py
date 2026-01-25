@@ -64,6 +64,11 @@ class SHAPEngine:
         Returns:
             Tuple[np.ndarray, Explainer]: SHAP値と説明器
         """
+        # 空データチェック
+        if len(X) == 0:
+            logger.warning("Empty DataFrame provided to SHAP explainer")
+            return np.array([]), None
+        
         # サンプリング
         if len(X) > self.max_samples:
             X_sample = X.sample(n=self.max_samples, random_state=42)
@@ -72,6 +77,11 @@ class SHAPEngine:
         
         # 説明器の選択
         explainer = self._get_explainer(model, X_sample)
+        
+        # explainerがNoneの場合（サンプル数不足など）
+        if explainer is None:
+            logger.warning("SHAP explainer could not be created")
+            return np.array([]), None
         
         # SHAP値計算
         try:
@@ -91,7 +101,7 @@ class SHAPEngine:
         self, 
         model: Any, 
         X: pd.DataFrame
-    ) -> shap.Explainer:
+    ) -> Optional[shap.Explainer]:
         """適切な説明器を選択"""
         model_type = type(model).__name__
         
@@ -106,6 +116,12 @@ class SHAPEngine:
                 return shap.TreeExplainer(model)
             except Exception as e:
                 logger.warning(f"TreeExplainer失敗、KernelExplainerを使用: {e}")
+        
+        # KernelExplainerには最小限のサンプルが必要
+        min_samples_required = 10
+        if len(X) < min_samples_required:
+            logger.warning(f"データサンプル数が少なすぎます ({len(X)} < {min_samples_required})。SHAP計算をスキップ。")
+            return None
         
         # フォールバック: KernelExplainer
         # 背景データをサブサンプリング

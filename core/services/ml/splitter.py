@@ -17,8 +17,18 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import (
     GroupKFold,
+    GroupShuffleSplit,
     KFold,
+    LeaveOneGroupOut,
+    LeaveOneOut,
+    LeavePOut,
+    PredefinedSplit,
+    RepeatedKFold,
+    RepeatedStratifiedKFold,
+    ShuffleSplit,
+    StratifiedGroupKFold,
     StratifiedKFold,
+    StratifiedShuffleSplit,
     TimeSeriesSplit,
     train_test_split,
 )
@@ -87,9 +97,101 @@ class DataSplitter:
         elif self.strategy == 'timeseries':
             splitter = TimeSeriesSplit(n_splits=self.n_splits)
             yield from splitter.split(X)
+        
+        elif self.strategy == 'loo':
+            # Leave-One-Out
+            logger.info(f"Leave-One-Out CV: {len(X)} splits")
+            splitter = LeaveOneOut()
+            yield from splitter.split(X)
+        
+        elif self.strategy == 'leave_one_group_out':
+            # Leave-One-Group-Out
+            if groups is None:
+                raise ValueError("groups required for leave_one_group_out strategy")
+            splitter = LeaveOneGroupOut()
+            yield from splitter.split(X, y, groups)
+        
+        elif self.strategy == 'leave_p_out':
+            # Leave-P-Out (p=2がデフォルト)
+            p = getattr(self, 'p', 2)
+            logger.info(f"Leave-{p}-Out CV")
+            splitter = LeavePOut(p=p)
+            yield from splitter.split(X)
+        
+        elif self.strategy == 'repeated_kfold':
+            # Repeated K-Fold
+            n_repeats = getattr(self, 'n_repeats', 10)
+            splitter = RepeatedKFold(
+                n_splits=self.n_splits,
+                n_repeats=n_repeats,
+                random_state=self.random_state,
+            )
+            yield from splitter.split(X)
+        
+        elif self.strategy == 'repeated_stratified_kfold':
+            # Repeated Stratified K-Fold
+            if y is None:
+                raise ValueError("y required for repeated_stratified_kfold")
+            n_repeats = getattr(self, 'n_repeats', 10)
+            splitter = RepeatedStratifiedKFold(
+                n_splits=self.n_splits,
+                n_repeats=n_repeats,
+                random_state=self.random_state,
+            )
+            yield from splitter.split(X, y)
+        
+        elif self.strategy == 'shuffle_split':
+            # Shuffle Split
+            splitter = ShuffleSplit(
+                n_splits=self.n_splits,
+                test_size=self.test_size,
+                random_state=self.random_state,
+            )
+            yield from splitter.split(X)
+        
+        elif self.strategy == 'stratified_shuffle_split':
+            # Stratified Shuffle Split
+            if y is None:
+                raise ValueError("y required for stratified_shuffle_split")
+            splitter = StratifiedShuffleSplit(
+                n_splits=self.n_splits,
+                test_size=self.test_size,
+                random_state=self.random_state,
+            )
+            yield from splitter.split(X, y)
+        
+        
+        elif self.strategy == 'group_shuffle_split':
+            # Group Shuffle Split
+            if groups is None:
+                raise ValueError("groups required for group_shuffle_split strategy")
+            splitter = GroupShuffleSplit(
+                n_splits=self.n_splits,
+                test_size=self.test_size,
+                random_state=self.random_state,
+            )
+            yield from splitter.split(X, y, groups)
+        
+        elif self.strategy == 'stratified_group_kfold':
+            # Stratified Group K-Fold
+            if y is None or groups is None:
+                raise ValueError("y and groups required for stratified_group_kfold")
+            splitter = StratifiedGroupKFold(n_splits=self.n_splits, shuffle=True, random_state=self.random_state)
+            yield from splitter.split(X, y, groups)
+        
+        elif self.strategy == 'predefined_split':
+            # Predefined Split
+            # test_fold属性が必要（-1がtraining、0以上がtest）
+            test_fold = getattr(self, 'test_fold', None)
+            if test_fold is None:
+                raise ValueError("test_fold array required for predefined_split strategy")
+            splitter = PredefinedSplit(test_fold=test_fold)
+            yield from splitter.split(X)
             
         else:
             raise ValueError(f"Unknown strategy: {self.strategy}")
+
+
     
     def train_test_split(
         self,

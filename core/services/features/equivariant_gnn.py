@@ -36,6 +36,9 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+# Default weights directory
+DEFAULT_WEIGHTS_DIR = Path.home() / ".chem_ml" / "weights"
+
 # オプショナル依存の遅延インポート
 _SCHNETPACK_AVAILABLE: Optional[bool] = None
 _PYG_AVAILABLE: Optional[bool] = None
@@ -171,6 +174,7 @@ class SchNetEmbedding(BaseEquivariantEmbedding):
         cutoff: float = 5.0,
         n_atom_basis: int = 128,
         device: str = "cpu",
+        weights_path: Optional[str] = None,
     ):
         """
         Args:
@@ -181,8 +185,16 @@ class SchNetEmbedding(BaseEquivariantEmbedding):
         """
         self.model_name = model_name
         self.cutoff = cutoff
+        self.cutoff = cutoff
         self.n_atom_basis = n_atom_basis
         self.device = device
+        self.weights_path = weights_path
+        
+        # Resolve default weights path for custom models
+        if self.weights_path is None:
+            default_path = DEFAULT_WEIGHTS_DIR / f"schnet_{model_name}.pt"
+            if default_path.exists():
+                self.weights_path = str(default_path)
         
         self._model = None
         self._loaded = False
@@ -212,6 +224,16 @@ class SchNetEmbedding(BaseEquivariantEmbedding):
                 cutoff=self.cutoff,
             )
             self._model.to(self.device)
+            
+            # Load weights if available
+            if self.weights_path and Path(self.weights_path).exists():
+                try:
+                    state_dict = torch.load(self.weights_path, map_location=self.device)
+                    self._model.load_state_dict(state_dict)
+                    logger.info(f"Loaded SchNet weights from {self.weights_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to load SchNet weights: {e}")
+            
             self._model.eval()
             self._loaded = True
             logger.info("SchNet model initialized")
@@ -288,11 +310,18 @@ class PaiNNEmbedding(BaseEquivariantEmbedding):
         n_interactions: int = 3,
         cutoff: float = 5.0,
         device: str = "cpu",
+        weights_path: Optional[str] = None,
     ):
         self.n_atom_basis = n_atom_basis
         self.n_interactions = n_interactions
         self.cutoff = cutoff
         self.device = device
+        self.weights_path = weights_path
+        
+        if self.weights_path is None:
+            default_path = DEFAULT_WEIGHTS_DIR / "painn.pt"
+            if default_path.exists():
+                self.weights_path = str(default_path)
         
         self._model = None
         self._loaded = False
@@ -318,6 +347,16 @@ class PaiNNEmbedding(BaseEquivariantEmbedding):
                 cutoff_fn=spk.nn.CosineCutoff(self.cutoff),
             )
             self._model.to(self.device)
+            
+            # Load weights if available
+            if self.weights_path and Path(self.weights_path).exists():
+                try:
+                    state_dict = torch.load(self.weights_path, map_location=self.device)
+                    self._model.load_state_dict(state_dict)
+                    logger.info(f"Loaded PaiNN weights from {self.weights_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to load PaiNN weights: {e}")
+                    
             self._model.eval()
             self._loaded = True
             logger.info("PaiNN model initialized")

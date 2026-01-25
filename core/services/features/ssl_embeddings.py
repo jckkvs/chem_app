@@ -36,6 +36,9 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+# Default weights directory matching scripts/download_weights.py
+DEFAULT_WEIGHTS_DIR = Path.home() / ".chem_ml" / "weights"
+
 # オプショナル依存の遅延インポート
 _TORCHDRUG_AVAILABLE: Optional[bool] = None
 _TORCH_AVAILABLE: Optional[bool] = None
@@ -109,6 +112,7 @@ class GROVEREmbedding(BaseSelfSupervisedModel):
         model_variant: str = 'base',
         hidden_size: int = 768,
         device: str = 'cpu',
+        weights_path: Optional[str] = None,
     ):
         """
         Args:
@@ -119,6 +123,13 @@ class GROVEREmbedding(BaseSelfSupervisedModel):
         self.model_variant = model_variant
         self.hidden_size = hidden_size
         self.device = device
+        self.weights_path = weights_path
+        
+        # Resolve default weights path
+        if self.weights_path is None:
+            default_path = DEFAULT_WEIGHTS_DIR / f"grover_{model_variant}.pt"
+            if default_path.exists():
+                self.weights_path = str(default_path)
         
         self._model = None
         self._loaded = False
@@ -148,6 +159,20 @@ class GROVEREmbedding(BaseSelfSupervisedModel):
                 num_head=8,
             )
             self._model.to(self.device)
+            
+            # Load weights if available
+            if self.weights_path and Path(self.weights_path).exists():
+                try:
+                    checkpoint = torch.load(self.weights_path, map_location=self.device)
+                    # GROVER checkpoints usually have a 'state_dict' or 'model' key
+                    state_dict = checkpoint.get('state_dict', checkpoint.get('model', checkpoint))
+                    self._model.load_state_dict(state_dict, strict=False)
+                    logger.info(f"Loaded GROVER weights from {self.weights_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to load GROVER weights: {e}")
+            else:
+                logger.warning(f"GROVER weights not found at {self.weights_path}. Using random initialization.")
+
             self._model.eval()
             self._loaded = True
             logger.info(f"GROVER {self.model_variant} model initialized")
@@ -221,9 +246,17 @@ class MolCLREmbedding(BaseSelfSupervisedModel):
         self,
         hidden_size: int = 512,
         device: str = 'cpu',
+        weights_path: Optional[str] = None,
     ):
         self.hidden_size = hidden_size
         self.device = device
+        self.weights_path = weights_path
+
+        # Resolve default weights path
+        if self.weights_path is None:
+            default_path = DEFAULT_WEIGHTS_DIR / "molclr_gin.pth"
+            if default_path.exists():
+                self.weights_path = str(default_path)
         
         self._model = None
         self._loaded = False
@@ -279,6 +312,23 @@ class MolCLREmbedding(BaseSelfSupervisedModel):
         
         self._model = GINEncoder(hidden_dim=self.hidden_size)
         self._model.to(self.device)
+        
+        # Load weights if available
+        if self.weights_path and Path(self.weights_path).exists():
+            try:
+                checkpoint = torch.load(self.weights_path, map_location=self.device)
+                state_dict = checkpoint.get('state_dict', checkpoint)
+                # Filter compatible keys (GINEncoder uses specific names)
+                model_dict = self._model.state_dict()
+                pretrained_dict = {k: v for k, v in state_dict.items() if k in model_dict and v.shape == model_dict[k].shape}
+                model_dict.update(pretrained_dict)
+                self._model.load_state_dict(model_dict)
+                logger.info(f"Loaded MolCLR weights from {self.weights_path}")
+            except Exception as e:
+                logger.warning(f"Failed to load MolCLR weights: {e}")
+        else:
+            logger.warning(f"MolCLR weights not found at {self.weights_path}. Using random initialization.")
+
         self._model.eval()
         self._loaded = True
         logger.info("MolCLR-style encoder initialized")

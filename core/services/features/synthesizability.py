@@ -84,7 +84,8 @@ class SynthesizabilityAssessor:
             # 難しい構造のチェック
             alerts = []
             for pattern, name in self.DIFFICULT_FRAGMENTS:
-                if pattern in smiles:
+                patt_mol = Chem.MolFromSmarts(pattern)
+                if patt_mol and mol.HasSubstructMatch(patt_mol):
                     alerts.append(name)
                     sa_score += 0.5
             

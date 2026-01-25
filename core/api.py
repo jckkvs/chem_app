@@ -15,6 +15,7 @@ import io
 import logging
 import mimetypes
 import os
+import warnings
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 
@@ -25,22 +26,79 @@ from django.conf import settings
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from ninja import File, Form, NinjaAPI, Schema, UploadedFile
+from ninja.security import HttpBearer
 
 from .models import Dataset, Experiment
 
 logger = logging.getLogger(__name__)
 
-# API初期化
+
+# ==============================================================================
+# Authentication
+# ==============================================================================
+
+class APITokenAuth(HttpBearer):
+    """
+    Simple token-based authentication
+    
+    For production, consider more robust solutions:
+    - JWT (JSON Web Tokens)
+    - OAuth2
+    - Django REST Framework TokenAuthentication
+    """
+    def authenticate(self, request, token: str):
+        from django.conf import settings
+        
+        expected_token = os.environ.get('API_SECRET_TOKEN')
+        
+        if not expected_token:
+            # No token configured - warn and allow (dev mode only)
+            if settings.DEBUG:
+                warnings.warn(
+                    "API_SECRET_TOKEN not set. API is unprotected! "
+                    "Set API_SECRET_TOKEN environment variable.",
+                    RuntimeWarning,
+                    stacklevel=2
+                )
+                return token  # Allow in dev mode
+            else:
+                logger.error("API_SECRET_TOKEN not configured in production")
+                return None  # Deny in production
+        
+        # Validate token
+        if token == expected_token:
+            return token
+        
+        return None  # Authentication failed
+
+
+# ==============================================================================
+# API Initialization
+# ==============================================================================
+
+# Protected API (requires authentication)
 api = NinjaAPI(
     title="ChemML API",
     version="2.0",
     urls_namespace="chem_api",
+    auth=APITokenAuth(),  # ✅ Authentication required
+    description="Chemical ML Platform API - Authentication required"
+)
+
+# Public API (no authentication)
+public_api = NinjaAPI(
+    title="ChemML Public API", 
+    version="2.0",
+    urls_namespace="chem_public_api",
+    description="Public endpoints (health checks, etc.)"
 )
 
 
-# --- Health Check ---
+# ==============================================================================
+# Public Endpoints (No Authentication Required)
+# ==============================================================================
 
-@api.get("/health")
+@public_api.get("/health")
 def health_check(request):
     """ヘルスチェック（運用監視用）"""
     import sys
@@ -64,7 +122,7 @@ def health_check(request):
     return status
 
 
-@api.get("/health/rdkit")
+@public_api.get("/health/rdkit")
 def health_rdkit(request):
     """RDKit動作確認"""
     try:
@@ -78,6 +136,11 @@ def health_rdkit(request):
         }
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+# ==============================================================================
+# Protected Endpoints (Authentication Required)
+# ==============================================================================
 
 
 # --- Schemas ---
@@ -699,194 +762,3 @@ def _generate_shap_image(model, X: pd.DataFrame) -> Optional[str]:
     except Exception as e:
         logger.warning(f"SHAP image generation failed: {e}")
         return None
-"""
-LLM Assistant API Endpoints - Append to core/api.py
-"""
-
-# --- LLM Assistant Endpoints ---
-
-
-class LLMFeatureSuggestionIn(Schema):
-    """特徴量選択アドバイスリクエスチE""
-
-    n_samples: int
-    task_type: str = "regression"  # or "classification"
-    target_property: str
-    available_features: Optional[List[str]] = None
-
-
-class LLMFeatureSuggestionOut(Schema):
-    """特徴量選択アドバイスレスポンス"""
-
-    recommended_features: List[str]
-    reasoning: str
-    alternative_features: List[str]
-    considerations: List[str]
-
-
-class LLMAnalysisPlanIn(Schema):
-    """解析�Eラン提案リクエスチE""
-
-    problem_description: str
-    n_samples: int
-    task_type: str = "regression"
-    target_property: str
-
-
-class LLMAnalysisPlanOut(Schema):
-    """解析�Eラン提案レスポンス"""
-
-    objective: str
-    recommended_approach: str
-    feature_engineering_steps: List[str]
-    model_suggestions: List[str]
-    validation_strategy: str
-    potential_challenges: List[str]
-
-
-class LLMInterpretResultsIn(Schema):
-    """結果解釈リクエスチE""
-
-    metrics: Dict[str, float]
-    model_type: str = "unknown"
-
-
-class LLMInterpretResultsOut(Schema):
-    """結果解釈レスポンス"""
-
-    interpretation: str
-
-
-class LLMAskIn(Schema):
-    """自由形式Q&AリクエスチE""
-
-    question: str
-    context: Optional[str] = None
-
-
-class LLMAskOut(Schema):
-    """自由形式Q&Aレスポンス"""
-
-    question: str
-    answer: str
-    llm_available: bool
-
-
-@api.post("/llm/suggest-features", response={200: LLMFeatureSuggestionOut, 400: ErrorOut})
-def llm_suggest_features(request, payload: LLMFeatureSuggestionIn):
-    """
-    LLMアシスタンチE 特徴量選択�Eアドバイス
-
-    チE�EタセチE��惁E��と予測対象の物性から、E��刁E��特徴量を推奨します、E
-    """
-    try:
-        from core.services.llm import ChemMLAssistant
-
-        assistant = ChemMLAssistant()
-
-        dataset_info = {
-            "n_samples": payload.n_samples,
-            "task_type": payload.task_type,
-            "target_property": payload.target_property,
-        }
-
-        suggestion = assistant.suggest_features(
-            dataset_info=dataset_info,
-            target_property=payload.target_property,
-            available_features=payload.available_features,
-        )
-
-        return {
-            "recommended_features": suggestion.recommended_features,
-            "reasoning": suggestion.reasoning,
-            "alternative_features": suggestion.alternative_features,
-            "considerations": suggestion.considerations,
-        }
-
-    except Exception as e:
-        logger.error(f"LLM feature suggestion failed: {e}")
-        return 400, {"detail": str(e)}
-
-
-@api.post("/llm/suggest-plan", response={200: LLMAnalysisPlanOut, 400: ErrorOut})
-def llm_suggest_analysis_plan(request, payload: LLMAnalysisPlanIn):
-    """
-    LLMアシスタンチE 解析�Eランの提桁E
-
-    問題記述とチE�EタセチE��惁E��から、E��刁E��解析戦略を提案します、E
-    """
-    try:
-        from core.services.llm import ChemMLAssistant
-
-        assistant = ChemMLAssistant()
-
-        dataset_info = {
-            "n_samples": payload.n_samples,
-            "task_type": payload.task_type,
-            "target_property": payload.target_property,
-        }
-
-        plan = assistant.suggest_analysis_plan(
-            problem_description=payload.problem_description, dataset_info=dataset_info
-        )
-
-        return {
-            "objective": plan.objective,
-            "recommended_approach": plan.recommended_approach,
-            "feature_engineering_steps": plan.feature_engineering_steps,
-            "model_suggestions": plan.model_suggestions,
-            "validation_strategy": plan.validation_strategy,
-            "potential_challenges": plan.potential_challenges,
-        }
-
-    except Exception as e:
-        logger.error(f"LLM analysis plan failed: {e}")
-        return 400, {"detail": str(e)}
-
-
-@api.post("/llm/interpret-results", response={200: LLMInterpretResultsOut, 400: ErrorOut})
-def llm_interpret_results(request, payload: LLMInterpretResultsIn):
-    """
-    LLMアシスタンチE モチE��結果の解釁E
-
-    評価持E��から、結果の解釈と改喁E��を提案します、E
-    """
-    try:
-        from core.services.llm import ChemMLAssistant
-
-        assistant = ChemMLAssistant()
-
-        interpretation = assistant.interpret_results(
-            metrics=payload.metrics, model_type=payload.model_type
-        )
-
-        return {"interpretation": interpretation}
-
-    except Exception as e:
-        logger.error(f"LLM interpretation failed: {e}")
-        return 400, {"detail": str(e)}
-
-
-@api.post("/llm/ask", response={200: LLMAskOut, 400: ErrorOut})
-def llm_ask(request, payload: LLMAskIn):
-    """
-    LLMアシスタンチE 自由形式Q&A
-
-    化学機械学習に関する質問に回答します、E
-    """
-    try:
-        from core.services.llm import ChemMLAssistant
-
-        assistant = ChemMLAssistant()
-
-        answer = assistant.ask(question=payload.question, context=payload.context)
-
-        return {
-            "question": payload.question,
-            "answer": answer,
-            "llm_available": assistant.is_available,
-        }
-
-    except Exception as e:
-        logger.error(f"LLM Q&A failed: {e}")
-        return 400, {"detail": str(e)}

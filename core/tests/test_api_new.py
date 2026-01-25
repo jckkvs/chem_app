@@ -14,35 +14,45 @@ class TestMoleculeEndpoints:
     
     @pytest.fixture
     def client(self):
-        return Client()
+        c = Client()
+        # Set token in environment
+        import os
+        os.environ["API_SECRET_TOKEN"] = "test-token"
+        return c
+
+    @pytest.fixture
+    def auth_headers(self):
+        return {"HTTP_AUTHORIZATION": "Bearer test-token"}
     
-    def test_validate_valid_smiles(self, client):
+    def test_validate_valid_smiles(self, client, auth_headers):
         """有効なSMILESの検証"""
         response = client.post(
             '/api/molecules/validate',
             data=json.dumps({'smiles': 'CCO'}),
-            content_type='application/json'
+            content_type='application/json',
+            **auth_headers
         )
         assert response.status_code == 200
         data = response.json()
         assert data['valid'] is True
         assert data['canonical_smiles'] == 'CCO'
     
-    def test_validate_invalid_smiles(self, client):
+    def test_validate_invalid_smiles(self, client, auth_headers):
         """無効なSMILESの検証"""
         response = client.post(
             '/api/molecules/validate',
             data=json.dumps({'smiles': 'INVALID_SMILES'}),
-            content_type='application/json'
+            content_type='application/json',
+            **auth_headers
         )
         assert response.status_code == 200
         data = response.json()
         assert data['valid'] is False
         assert data['error'] is not None
     
-    def test_get_properties(self, client):
+    def test_get_properties(self, client, auth_headers):
         """分子物性取得"""
-        response = client.get('/api/molecules/CCO/properties')
+        response = client.get('/api/molecules/CCO/properties', **auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert 'molecular_weight' in data
@@ -50,9 +60,9 @@ class TestMoleculeEndpoints:
         assert 'logp' in data
         assert 'tpsa' in data
     
-    def test_get_svg(self, client):
+    def test_get_svg(self, client, auth_headers):
         """分子SVG取得"""
-        response = client.get('/api/molecules/c1ccccc1/svg')
+        response = client.get('/api/molecules/c1ccccc1/svg', **auth_headers)
         assert response.status_code == 200
         assert 'svg' in response['Content-Type'].lower()
 
@@ -66,7 +76,7 @@ class TestHealthEndpoints:
     
     def test_health_check(self, client):
         """基本ヘルスチェック"""
-        response = client.get('/api/health')
+        response = client.get('/api/public/health')
         assert response.status_code == 200
         data = response.json()
         assert data['status'] in ['healthy', 'degraded']
@@ -74,7 +84,7 @@ class TestHealthEndpoints:
     
     def test_rdkit_health(self, client):
         """RDKitヘルスチェック"""
-        response = client.get('/api/health/rdkit')
+        response = client.get('/api/public/health/rdkit')
         assert response.status_code == 200
         data = response.json()
         assert data['status'] == 'ok'
@@ -86,11 +96,18 @@ class TestDatasetEndpoints:
     
     @pytest.fixture
     def client(self):
-        return Client()
+        c = Client()
+        import os
+        os.environ["API_SECRET_TOKEN"] = "test-token"
+        return c
+
+    @pytest.fixture
+    def auth_headers(self):
+        return {"HTTP_AUTHORIZATION": "Bearer test-token"}
     
-    def test_list_datasets(self, client):
+    def test_list_datasets(self, client, auth_headers):
         """データセット一覧取得"""
-        response = client.get('/api/datasets')
+        response = client.get('/api/datasets', **auth_headers)
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
@@ -100,11 +117,18 @@ class TestExperimentEndpoints:
     
     @pytest.fixture
     def client(self):
-        return Client()
+        c = Client()
+        import os
+        os.environ["API_SECRET_TOKEN"] = "test-token"
+        return c
+
+    @pytest.fixture
+    def auth_headers(self):
+        return {"HTTP_AUTHORIZATION": "Bearer test-token"}
     
-    def test_list_experiments(self, client):
+    def test_list_experiments(self, client, auth_headers):
         """実験一覧取得"""
-        response = client.get('/api/experiments')
+        response = client.get('/api/experiments', **auth_headers)
         assert response.status_code == 200
         assert isinstance(response.json(), list)
 
@@ -114,9 +138,16 @@ class TestSimilarityEndpoints:
     
     @pytest.fixture
     def client(self):
-        return Client()
+        c = Client()
+        import os
+        os.environ["API_SECRET_TOKEN"] = "test-token"
+        return c
+
+    @pytest.fixture
+    def auth_headers(self):
+        return {"HTTP_AUTHORIZATION": "Bearer test-token"}
     
-    def test_similarity_search(self, client):
+    def test_similarity_search(self, client, auth_headers):
         """類似度検索"""
         response = client.post(
             '/api/molecules/similarity',
@@ -126,7 +157,8 @@ class TestSimilarityEndpoints:
                 'threshold': 0.5,
                 'top_k': 5
             }),
-            content_type='application/json'
+            content_type='application/json',
+            **auth_headers
         )
         assert response.status_code == 200
         data = response.json()
@@ -136,9 +168,9 @@ class TestSimilarityEndpoints:
         if data['results']:
             assert data['results'][0]['similarity'] == 1.0
     
-    def test_get_fingerprint(self, client):
+    def test_get_fingerprint(self, client, auth_headers):
         """フィンガープリント取得"""
-        response = client.get('/api/molecules/CCO/fingerprint')
+        response = client.get('/api/molecules/CCO/fingerprint', **auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert 'on_bits' in data

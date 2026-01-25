@@ -78,6 +78,8 @@ class ModelPersistence:
         
         self._registry_path = self.base_dir / "registry.json"
         self._registry = self._load_registry()
+        if not self._registry_path.exists():
+            self._save_registry()
     
     def _load_registry(self) -> Dict[str, Any]:
         """レジストリをロード"""

@@ -1,14 +1,43 @@
+import os
+import warnings
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-SECRET_KEY = 'django-insecure-chem-ai-dev-key'
+# ==============================================================================
+# Security Settings
+# ==============================================================================
 
-DEBUG = True
+# SECRET_KEY: Must be set via environment variable
+# Generate with: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
-ALLOWED_HOSTS = ['*']
+if not SECRET_KEY:
+    # デフォルト値は開発環境のみ許可
+    if os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes'):
+        warnings.warn(
+            "DJANGO_SECRET_KEY not set. Using insecure default for development only. "
+            "Set DJANGO_SECRET_KEY environment variable for production.",
+            RuntimeWarning,
+            stacklevel=2
+        )
+        SECRET_KEY = 'django-insecure-dev-only-DO-NOT-USE-IN-PRODUCTION'
+    else:
+        raise ValueError(
+            "DJANGO_SECRET_KEY environment variable must be set in production. "
+            "Generate with: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
+        )
+
+# DEBUG: Environment variable (default: False for safety)
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
+
+# ALLOWED_HOSTS: Environment variable (default: localhost only)
+ALLOWED_HOSTS = [
+    s.strip() 
+    for s in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    if s.strip()
+]
 
 # Application definition
 
@@ -88,3 +117,25 @@ STATIC_URL = 'static/'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ==============================================================================
+# Security Settings for Production
+# ==============================================================================
+
+if not DEBUG:
+    # Force HTTPS
+    SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'True').lower() == 'true'
+    
+    # Secure cookies
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # HSTS (HTTP Strict Transport Security)
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Content Security
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'

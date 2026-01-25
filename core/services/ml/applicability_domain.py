@@ -151,7 +151,7 @@ class ApplicabilityDomain:
                 warnings.append(f"Distance {mean_dist:.3f} exceeds threshold {self.distance_threshold_:.3f}")
             
             return ADResult(
-                is_within_domain=is_within,
+                is_within_domain=bool(is_within),
                 confidence=min(1, max(0, confidence)),
                 nearest_distance=float(mean_dist),
                 z_score=float(z_score),
@@ -171,7 +171,7 @@ class ApplicabilityDomain:
                     warnings.append(f"PC{j+1} out of bounds")
             
             return ADResult(
-                is_within_domain=is_within,
+                is_within_domain=bool(is_within),
                 confidence=1.0 if is_within else 0.5,
                 nearest_distance=0,
                 z_score=0,

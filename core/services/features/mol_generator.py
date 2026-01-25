@@ -44,14 +44,16 @@ class MoleculeGenerator:
     """
     
     # 置換ルール
+    # 置換ルール (Reaction SMARTS)
     MODIFICATIONS = [
-        # (from_smarts, to_smiles, name)
-        ("[OH]", "OCH3", "O-methylation"),
-        ("[OH]", "OCC", "O-ethylation"),
-        ("[NH2]", "NHC", "N-methylation"),
-        ("[CH3]", "CC", "Methyl to ethyl"),
-        ("[F]", "Cl", "F to Cl"),
-        ("[Cl]", "F", "Cl to F"),
+        # (reaction_smarts, name)
+        ("[c:1][O;H1]>>[c:1][O]C", "O-methylation (Phenolic)"),
+        ("[C:1][O;H1]>>[C:1][O]C", "O-methylation (Aliphatic)"),
+        ("[c:1][O;H1]>>[c:1][O]CC", "O-ethylation (Phenolic)"),
+        ("[c:1][N;H2]>>[c:1][N]C", "N-methylation (Aniline)"),
+        ("[C:1]C>>[C:1]CC", "Methyl to Ethyl"), # [C:1]-C -> [C:1]-C-C
+        ("[c:1]F>>[c:1]Cl", "F to Cl"),
+        ("[c:1]Cl>>[c:1]F", "Cl to F"),
     ]
     
     # 付加フラグメント
@@ -82,26 +84,46 @@ class MoleculeGenerator:
                 return []
             
             variants = []
+            seen_smiles = {smiles}
             
-            # 置換による変種
-            for from_smarts, to_smiles, name in self.MODIFICATIONS:
-                pattern = Chem.MolFromSmarts(from_smarts)
-                if pattern and mol.HasSubstructMatch(pattern):
+            # 反応SMARTSによる変種生成
+            for smarts, name in self.MODIFICATIONS:
+                try:
+                    rxn = AllChem.ReactionFromSmarts(smarts)
+                    products_list = rxn.RunReactants((mol,))
+                    
+                    for products in products_list:
+                        for prod in products:
+                            try:
+                                Chem.SanitizeMol(prod)
+                                prod_smi = Chem.MolToSmiles(prod)
+                                if prod_smi not in seen_smiles:
+                                    variants.append(GeneratedMolecule(
+                                        smiles=prod_smi,
+                                        parent_smiles=smiles,
+                                        modification=name,
+                                    ))
+                                    seen_smiles.add(prod_smi)
+                            except:
+                                pass
+                except Exception:
+                    pass
+            
+            # ランダムフラグメント付加 (変わらず)
+            attempts = 0
+            while len(variants) < n_variants and attempts < n_variants * 2:
+                attempts += 1
+                fragment = self.rng.choice(self.FRAGMENTS)
+                new_smiles = f"{smiles}.{fragment}"
+                if new_smiles not in seen_smiles:
                     try:
-                        # 簡易置換
-                        new_smiles = smiles.replace(
-                            from_smarts.strip('[]'),
-                            to_smiles.strip('[]'),
-                            1
-                        )
-                        new_mol = Chem.MolFromSmiles(new_smiles)
-                        if new_mol:
-                            variants.append(GeneratedMolecule(
-                                smiles=Chem.MolToSmiles(new_mol),
-                                parent_smiles=smiles,
-                                modification=name,
-                            ))
-                    except Exception:
+                        variants.append(GeneratedMolecule(
+                            smiles=new_smiles,
+                            parent_smiles=smiles,
+                            modification=f"Add {fragment}",
+                        ))
+                        seen_smiles.add(new_smiles)
+                    except:
                         pass
             
             # ランダムフラグメント付加

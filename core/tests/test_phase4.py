@@ -16,6 +16,8 @@ from core.services.ml.tracking import MLTracker
 class Phase4Tests(TestCase):
     def setUp(self):
         self.client = Client()
+        self.token = "test-token"
+        os.environ["API_SECRET_TOKEN"] = self.token
         self.temp_dir = tempfile.mkdtemp()
         self.dataset = Dataset.objects.create(
             name="TestDS",
@@ -32,6 +34,8 @@ class Phase4Tests(TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
+        if "API_SECRET_TOKEN" in os.environ:
+            del os.environ["API_SECRET_TOKEN"]
 
     def test_uma_persistence(self):
         # 1. Fit and Save
@@ -121,8 +125,12 @@ class Phase4Tests(TestCase):
         
         # Call API
         payload = {"smiles": "C"}
-        response = self.client.post(f"/api/experiments/{exp.id}/predict", 
-                                   data=payload, content_type="application/json")
+        response = self.client.post(
+            f"/api/experiments/{exp.id}/predict", 
+            data=payload, 
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}"
+        )
         
         self.assertEqual(response.status_code, 200, response.json())
         data = response.json()

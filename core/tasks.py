@@ -67,6 +67,12 @@ def extract_features_smiles_only(
     target_property = config.get('target_property', 'general')
     use_smart_engine = config.get('use_smart_engine', True)
     
+    # 'uma'が明示的に指定されている場合は従来モードを使用
+    # （UMA reducerの保存が必要なため）
+    if 'uma' in config.get('features', []):
+        use_smart_engine = False
+        logger.info("UMA特徴量が指定されているため、従来モードを使用")
+    
     if use_smart_engine:
         # SmartFeatureEngine使用（推奨）
         logger.info(f"SmartFeatureEngine使用: target_property={target_property}")

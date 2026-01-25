@@ -42,25 +42,25 @@ class ReactionPredictor:
         >>> result = predictor.predict_product("CC(=O)Cl.CCO")
     """
     
-    # 基本的な反応ルール
+    # 基本的な反応ルール (SMARTS)
     REACTION_RULES = [
         {
-            'name': 'Ester formation',
+            'name': 'Ester formation (Acyl chloride + Alcohol)',
             'type': 'condensation',
-            'reactant_patterns': ['C(=O)Cl', 'O'],
-            'product_template': 'C(=O)O',
+            'smarts': '[C:1](=[O:2])[Cl:3].[O:4][C:5]>>[C:1](=[O:2])[O:4][C:5]',
+            'reactant_patterns': ['C(=O)Cl', 'O'],  # 簡易チェック用
         },
         {
-            'name': 'Amide formation',
+            'name': 'Amide formation (Acyl chloride + Amine)',
             'type': 'condensation',
+            'smarts': '[C:1](=[O:2])[Cl:3].[N:4][C:5]>>[C:1](=[O:2])[N:4][C:5]',
             'reactant_patterns': ['C(=O)Cl', 'N'],
-            'product_template': 'C(=O)N',
         },
         {
-            'name': 'Alkylation',
+            'name': 'Alkylation (Alkyl halide + Amine)',
             'type': 'substitution',
+            'smarts': '[C:1][Cl,Br,I:2].[N:3]>>[C:1][N:3]',
             'reactant_patterns': ['[Cl,Br,I]', 'N'],
-            'product_template': 'N',
         },
     ]
     
@@ -108,29 +108,53 @@ class ReactionPredictor:
             from rdkit import Chem
             from rdkit.Chem import AllChem
             
-            matches = [False] * len(rule['reactant_patterns'])
+            # SMARTSから反応オブジェクトを作成
+            rxn = AllChem.ReactionFromSmarts(rule['smarts'])
             
+            # 各反応物をMoleculeオブジェクトに変換
+            mol_reactants = []
             for smi in reactants:
                 mol = Chem.MolFromSmiles(smi)
-                if mol is None:
-                    continue
-                
-                for i, pattern in enumerate(rule['reactant_patterns']):
-                    patt = Chem.MolFromSmarts(pattern)
-                    if patt and mol.HasSubstructMatch(patt):
-                        matches[i] = True
+                if mol:
+                    mol_reactants.append(mol)
             
-            if all(matches):
-                # 簡易的な生成物生成
-                product = '.'.join(reactants)  # 実際にはテンプレート適用
+            if len(mol_reactants) != len(reactants):
+                return None
+
+            try:
+                # 反応を実行 (RunReactantsは考えられる組み合わせをすべて返す)
+                # 今回は単純化のため、入力順序がSMARTSと一致すると仮定するか、
+                # あるいはPermutationを試すが、まずは単純にリストを渡す
+                # RDKitのRunReactantsは tuple of tuples を返す ((product1,), (product1', product2'), ...)
                 
-                return ReactionResult(
-                    reactants=reactants,
-                    products=[product],
-                    reaction_smiles=f"{'.'.join(reactants)}>>{product}",
-                    reaction_type=rule['type'],
-                    confidence=0.8,
-                )
+                # 反応物の数が合わない場合はスキップ（簡易実装）
+                if rxn.GetNumReactantTemplates() != len(mol_reactants):
+                    # 順序や数が重要。ここでは単純に渡す
+                    pass
+
+                products_set = rxn.RunReactants(mol_reactants)
+                
+                if not products_set:
+                    # 順序逆転して再トライ（2成分系のみ）
+                    if len(mol_reactants) == 2:
+                        products_set = rxn.RunReactants(mol_reactants[::-1])
+
+                if products_set:
+                    # 最初の生成物セットを採用
+                    products = products_set[0]
+                    product_smiles = [Chem.MolToSmiles(m) for m in products]
+                    
+                    return ReactionResult(
+                        reactants=reactants,
+                        products=product_smiles,
+                        reaction_smiles=f"{'.'.join(reactants)}>>{'.'.join(product_smiles)}",
+                        reaction_type=rule['type'],
+                        confidence=0.9,
+                    )
+            
+            except Exception as e:
+                # logger.warning(f"Rule application failed: {e}")
+                pass
             
             return None
             

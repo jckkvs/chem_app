@@ -50,7 +50,19 @@ from .uncertainty import UncertaintyQuantifier
 logger = logging.getLogger(__name__)
 
 
-# モデル定義
+# ModelFactory統合（多様なモデルサポート）
+try:
+    from .model_factory import ModelFactory
+    
+    _model_factory = ModelFactory()
+    USE_MODEL_FACTORY = True
+    logger.info(f"ModelFactory初期化成功。利用可能モデル: {_model_factory.list_available_models()}")
+except ImportError as e:
+    logger.warning(f"ModelFactory利用不可: {e}、従来のMODEL_REGISTRYを使用")
+    _model_factory = None
+    USE_MODEL_FACTORY = False
+
+# 従来のモデル定義（後方互換性のため維持）
 MODEL_REGISTRY: Dict[Tuple[str, str], type] = {
     ('regression', 'random_forest'): RandomForestRegressor,
     ('regression', 'xgboost'): XGBRegressor,
@@ -62,7 +74,7 @@ MODEL_REGISTRY: Dict[Tuple[str, str], type] = {
     ('classification', 'lgbm'): lgb.LGBMClassifier,
 }
 
-# デフォルトハイパーパラメータ
+# デフォルトハイパーパラメータ（後方互換性のため維持）
 DEFAULT_PARAMS: Dict[str, Dict[str, Any]] = {
     'random_forest': {'n_estimators': 100, 'random_state': 42, 'n_jobs': -1},
     'xgboost': {'random_state': 42, 'n_jobs': -1},
@@ -164,6 +176,20 @@ class MLPipeline:
     
     def _get_model(self) -> BaseEstimator:
         """モデルインスタンスを生成"""
+        # ModelFactory利用可能な場合は優先使用
+        if USE_MODEL_FACTORY and _model_factory:
+            try:
+                model = _model_factory.create(
+                    self.task_type, 
+                    self.model_type, 
+                    **self.model_params
+                )
+                logger.info(f"ModelFactoryでモデル作成: {self.task_type}/{self.model_type}")
+                return model
+            except ValueError as e:
+                logger.warning(f"ModelFactoryでモデル作成失敗: {e}、従来の方法を使用")
+        
+        # フォールバック: 従来のMODEL_REGISTRY
         key = (self.task_type, self.model_type)
         
         if key not in MODEL_REGISTRY:
@@ -253,7 +279,10 @@ class MLPipeline:
                 ad_params = {'method': 'knn', **self.ad_params}
                 self.ad_model_ = ApplicabilityDomain(**ad_params)
                 self.ad_model_.fit(X_processed)
-                self.tracker.log_params({'ad_enabled': True, **ad_params})
+                # パラメータ名に接頭辞を付けて衝突を回避
+                ad_log_params = {f'ad_{k}': v for k, v in ad_params.items()}
+                ad_log_params['ad_enabled'] = True
+                self.tracker.log_params(ad_log_params)
             
             # 7. Uncertainty Quantification
             if self.enable_uq and self.task_type == 'regression':
@@ -261,7 +290,10 @@ class MLPipeline:
                 uq_params = {'method': 'quantile', **self.uq_params}
                 self.uq_model_ = UncertaintyQuantifier(**uq_params)
                 self.uq_model_.fit(X_processed, y)
-                self.tracker.log_params({'uq_enabled': True, **uq_params})
+                # パラメータ名に接頭辞を付けて衝突を回避
+                uq_log_params = {f'uq_{k}': v for k, v in uq_params.items()}
+                uq_log_params['uq_enabled'] = True
+                self.tracker.log_params(uq_log_params)
             
             # 8. モデル保存
             self.tracker.log_model(model, "model")
