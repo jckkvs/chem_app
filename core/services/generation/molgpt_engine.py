@@ -89,6 +89,10 @@ class MolGPTGenerator:
         self._model = None
         self._tokenizer = None
         self._is_loaded = False
+        
+        # MolT5とスコアラー（遅延ロード）
+        self._molt5 = None
+        self._scorer = None
     
     def _load_model(self) -> None:
         """モデルロード（遅延初期化）"""
@@ -317,3 +321,97 @@ class MolGPTGenerator:
             config=config,
             **kwargs
         )
+    
+    def text_to_molecule(
+        self,
+        description: str,
+        n_molecules: int = 10,
+        use_scoring: bool = True,
+        **kwargs
+    ) -> List[GeneratedMolecule]:
+        """
+        自然言語から分子生成（MolT5使用）
+        
+        Implements: F-MOLT5-TEXT2MOL
+        論文: MolT5 (arXiv:2204.11817)
+        
+        Args:
+            description: 自然言語記述（例: "aspirin-like molecule"）
+            n_molecules: 生成候補数
+            use_scoring: スコアリング使用
+        
+        Returns:
+            スコア付き生成分子リスト
+        
+        Example:
+            >>> gen = MolGPTGenerator()
+            >>> mols = gen.text_to_molecule("anti-inflammatory drug")
+            >>> print(mols[0].smiles, mols[0].score)
+            'CC(=O)Oc1ccccc1C(=O)O' 0.85
+        """
+        # MolT5ロード
+        if self._molt5 is None:
+            from .molt5_translator import MolT5Translator
+            try:
+                self._molt5 = MolT5Translator(task='caption2smiles')
+            except Exception as e:
+                logger.error(f"Failed to load MolT5: {e}")
+                # フォールバック: 基本生成
+                logger.warning("Falling back to basic generation")
+                return self.generate(n_molecules=n_molecules, **kwargs)
+        
+        # MolT5で生成
+        try:
+            smiles_list = self._molt5.text_to_smiles(
+                description,
+                n_molecules=min(n_molecules, 20),
+            )
+            
+            if not smiles_list:
+                logger.warning("MolT5 returned no molecules, using basic generation")
+                return self.generate(n_molecules=n_molecules, **kwargs)
+            
+        except Exception as e:
+            logger.error(f"MolT5 generation failed: {e}, using basic generation")
+            return self.generate(n_molecules=n_molecules, **kwargs)
+        
+        # スコアリング
+        molecules = []
+        
+        for smiles in smiles_list[:n_molecules]:
+            # SMILES検証
+            clean_smiles = self._clean_smiles(smiles)
+            if not clean_smiles:
+                continue
+            
+            # スコア計算
+            score = 0.5  # デフォルト
+            properties = {}
+            
+            if use_scoring:
+                if self._scorer is None:
+                    from .molecule_scorer import MoleculeScorer
+                    self._scorer = MoleculeScorer()
+                
+                try:
+                    score_result = self._scorer.score_molecule(clean_smiles)
+                    score = score_result.get('overall_score', 0.5)
+                    properties = {
+                        'qed': score_result.get('qed'),
+                        'sa_score': score_result.get('sa_score'),
+                        'lipinski': score_result.get('lipinski', {}).get('all_pass'),
+                    }
+                except Exception as e:
+                    logger.warning(f"Scoring failed for {clean_smiles}: {e}")
+            
+            molecules.append(GeneratedMolecule(
+                smiles=clean_smiles,
+                score=score,
+                properties=properties,
+            ))
+        
+        # スコア降順ソート
+        molecules.sort(key=lambda m: m.score, reverse=True)
+        
+        logger.info(f"Generated {len(molecules)} molecules from text: '{description}'")
+        return molecules

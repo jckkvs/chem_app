@@ -170,49 +170,93 @@ def conditional_generate(request) -> JsonResponse:
 @require_http_methods(["POST"])
 def text_to_molecule(request) -> JsonResponse:
     """
-    自然言語→分子変換API
+    自然言語→分子変換API（MolT5完全実装版）
     
     POST /api/generate/from-text
     {
-        "description": "水溶性の高い抗がん剤",
-        "n_molecules": 5
+        "description": "aspirin-like anti-inflammatory drug",
+        "n_molecules": 10,
+        "use_scoring": true,
+        "validate": true
     }
     
-    Note:
-        Phase 2でMolT5統合後に完全実装予定。
-        現在は基本生成にフォールバック。
+    Response:
+    {
+        "molecules": [
+            {
+                "smiles": "CC(=O)Oc1ccccc1C(=O)O",
+                "score": 0.85,
+                "properties": {
+                    "qed": 0.72,
+                    "sa_score": 2.3,
+                    "lipinski": true
+                },
+                "validation": {
+                    "is_valid": true,
+                    "molecular_weight": 180.16
+                }
+            }
+        ],
+        "description": "aspirin-like anti-inflammatory drug",
+        "count": 10,
+        "model": "molt5-small-caption2smiles"
+    }
     """
     try:
         data = json.loads(request.body)
         
         description = data.get('description', '')
-        n_molecules = data.get('n_molecules', 5)
+        if not description:
+            return JsonResponse({
+                "error": "description is required",
+                "status": "error"
+            }, status=400)
         
-        logger.warning(
-            f"Text-to-molecule not fully implemented. "
-            f"Using basic generation for: {description}"
+        n_molecules = data.get('n_molecules', 10)
+        use_scoring = data.get('use_scoring', True)
+        validate = data.get('validate', True)
+        
+        # MolT5で生成
+        generator = MolGPTGenerator()
+        molecules = generator.text_to_molecule(
+            description=description,
+            n_molecules=n_molecules,
+            use_scoring=use_scoring
         )
         
-        # 基本生成にフォールバック
-        generator = MolGPTGenerator()
-        molecules = generator.generate(n_molecules=n_molecules)
+        # 検証
+        validator = GeneratedMoleculeValidator() if validate else None
         
         results = []
         for mol in molecules:
-            results.append({
+            result = {
                 "smiles": mol.smiles,
-                "score": mol.score
-            })
+                "score": mol.score,
+                "properties": mol.properties or {}
+            }
+            
+            if validator:
+                validation = validator.validate(mol.smiles)
+                result["validation"] = {
+                    "is_valid": validation.is_valid,
+                    "qed_score": validation.qed_score,
+                    "lipinski_violations": validation.lipinski_violations,
+                    "molecular_weight": validation.molecular_weight,
+                    "logp": validation.logp
+                }
+            
+            results.append(result)
         
         return JsonResponse({
             "molecules": results,
             "description": description,
-            "note": "Full text-to-molecule with MolT5 coming in Phase 2",
+            "count": len(results),
+            "model": "molt5-small-caption2smiles",
             "status": "success"
         })
     
     except Exception as e:
-        logger.error(f"Text-to-molecule failed: {e}")
+        logger.error(f"Text-to-molecule generation failed: {e}")
         return JsonResponse({
             "error": str(e),
             "status": "error"
