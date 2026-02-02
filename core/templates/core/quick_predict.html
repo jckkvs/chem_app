@@ -1,0 +1,317 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ワンクリック予測 - ChemML</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .predict-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .predict-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .predict-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: #f0f4ff;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+        }
+
+        .result.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-value {
+            font-size: 42px;
+            color: #667eea;
+            font-weight: 700;
+            margin: 15px 0;
+        }
+
+        .interpretation {
+            font-size: 18px;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .confidence {
+            font-size: 14px;
+            color: #666;
+            margin-top: 15px;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+        }
+
+        .examples {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 10px;
+        }
+
+        .examples h4 {
+            margin-bottom: 10px;
+            color: #856404;
+        }
+
+        .example-btn {
+            display: inline-block;
+            padding: 8px 15px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔮 ワンクリック予測</h1>
+        <p class="subtitle">SMILESを入力するだけで、物性を予測します</p>
+
+        <div class="examples">
+            <h4>💡 試してみる:</h4>
+            <span class="example-btn" onclick="setExample('CCO', 'エタノール')">CCO (エタノール)</span>
+            <span class="example-btn" onclick="setExample('CC(=O)O', '酢酸')">CC(=O)O (酢酸)</span>
+            <span class="example-btn" onclick="setExample('c1ccccc1', 'ベンゼン')">c1ccccc1 (ベンゼン)</span>
+            <span class="example-btn" onclick="setExample('CC(C)Cc1ccc(cc1)C(C)C(=O)O', 'イブプロフェン')">イブプロフェン</span>
+        </div>
+
+        <div class="input-group">
+            <label for="smiles">SMILES</label>
+            <input type="text" id="smiles" placeholder="例: CCO" value="">
+        </div>
+
+        <div class="input-group">
+            <label for="property">予測したい物性</label>
+            <select id="property">
+                <!-- JavaScriptで動的に生成 -->
+            </select>
+        </div>
+
+        <button class="predict-btn" onclick="predict()">
+            🚀 予測する
+        </button>
+
+        <div class="result" id="result">
+            <h3 id="property-name"></h3>
+            <div class="result-value" id="result-value"></div>
+            <div class="interpretation" id="interpretation"></div>
+            <div class="confidence">
+                信頼度: <span id="confidence-value"></span>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidence-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 物性一覧をロード
+        async function loadProperties() {
+            try {
+                const response = await fetch('/api/predict/properties');
+                const data = await response.json();
+
+                const select = document.getElementById('property');
+                select.innerHTML = '';
+
+                data.properties.forEach(prop => {
+                    const option = document.createElement('option');
+                    option.value = prop.id;
+                    option.textContent = `${prop.name} (${prop.accuracy})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load properties:', error);
+            }
+        }
+
+        // 予測実行
+        async function predict() {
+            const smiles = document.getElementById('smiles').value.trim();
+            const property = document.getElementById('property').value;
+
+            if (!smiles) {
+                alert('SMILESを入力してください');
+                return;
+            }
+
+            const btn = document.querySelector('.predict-btn');
+            btn.disabled = true;
+            btn.textContent = '予測中...';
+
+            try {
+                const response = await fetch('/api/predict/quick', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        smiles: smiles,
+                        property: property
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // 結果表示
+                    document.getElementById('property-name').textContent = data.model_info.name;
+                    document.getElementById('result-value').textContent =
+                        data.prediction.toFixed(2) + (data.unit ? ` ${data.unit}` : '');
+                    document.getElementById('interpretation').textContent =
+                        data.interpretation;
+                    document.getElementById('confidence-value').textContent =
+                        (data.confidence * 100).toFixed(0) + '%';
+                    document.getElementById('confidence-fill').style.width =
+                        (data.confidence * 100) + '%';
+
+                    document.getElementById('result').classList.add('active');
+                } else {
+                    alert('エラー: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Prediction failed:', error);
+                alert('予測に失敗しました');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 予測する';
+            }
+        }
+
+        // 例を設定
+        function setExample(smiles, name) {
+            document.getElementById('smiles').value = smiles;
+        }
+
+        // ページロード時
+        document.addEventListener('DOMContentLoaded', loadProperties);
+
+        // Enterキーで予測
+        document.getElementById('smiles').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') predict();
+        });
+    </script>
+</body>
+
+</html>

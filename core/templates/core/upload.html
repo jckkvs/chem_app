@@ -1,20 +1,617 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 
 <head>
-    <title>Upload Dataset</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データアップロード - ChemML</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* ドロップゾーン */
+        .drop-zone {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.drag-over {
+            background: #e8edff;
+            border-color: #5568d3;
+            transform: scale(1.02);
+        }
+
+        .drop-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .drop-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .drop-hint {
+            color: #666;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .choose-file-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+
+        .choose-file-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* ファイルプレビュー */
+        .file-preview {
+            display: none;
+            background: #f0f4ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .file-preview.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .remove-file {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .remove-file:hover {
+            background: #ff3838;
+        }
+
+        /* データプレビュー */
+        .data-preview {
+            max-height: 200px;
+            overflow: auto;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .data-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .data-preview th,
+        .data-preview td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-preview th {
+            background: #667eea;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        /* フォーム */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .supported-formats {
+            background: #fff3cd;
+            border: 1px solid #ffd700;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .format-list {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .format-badge {
+            background: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        /* デモセクション */
+        .demo-section {
+            margin: 30px 0;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .demo-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .demo-card h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        .demo-card p {
+            margin: 5px 0;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .demo-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-top: 8px;
+        }
+    </style>
 </head>
 
-<body class="container mt-4">
-    <h1>Upload Dataset</h1>
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <label>Name: <input type="text" name="name" required></label><br>
-        <label>File (CSV): <input type="file" name="file" required></label><br>
-        <label>SMILES Col: <input type="text" name="smiles_col" value="SMILES"></label><br>
-        <label>Target Col: <input type="text" name="target_col" value="target"></label><br>
-        <button type="submit">Upload</button>
-    </form>
+<body>
+    <div class="container">
+        <h1>📊 データアップロード</h1>
+        <p class="subtitle">分子データセットをアップロードして、機械学習モデルを構築しましょう</p>
+
+        <div class="supported-formats">
+            <strong>💡 対応フォーマット:</strong>
+            <div class="format-list">
+                <span class="format-badge">CSV</span>
+                <span class="format-badge">Excel (.xlsx)</span>
+                <span class="format-badge">SDF</span>
+                <span class="format-badge">JSON</span>
+            </div>
+        </div>
+
+        <!-- デモデータセット -->
+        <div class="demo-section">
+            <h3 style="margin-bottom: 15px;">🚀 データがなくても今すぐ試せます</h3>
+            <div class="demo-grid" id="demo-grid">
+                <!-- JavaScriptで動的に生成 -->
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0; color: #999;">
+            または
+        </div>
+
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+            {% csrf_token %}
+
+            <!-- ドロップゾーン -->
+            <div class="drop-zone" id="drop-zone">
+                <div class="drop-icon">📂</div>
+                <div class="drop-text">ファイルをここにドロップ</div>
+                <button type="button" class="choose-file-btn" onclick="document.getElementById('file-input').click()">
+                    ファイルを選択
+                </button>
+                <p class="drop-hint">または上記ボタンをクリック</p>
+            </div>
+
+            <input type="file" id="file-input" name="file" class="file-input" accept=".csv,.xlsx,.sdf,.json" required>
+
+            <!-- ファイルプレビュー -->
+            <div class="file-preview" id="file-preview">
+                <div class="file-info">
+                    <div>
+                        <div class="file-name" id="file-name"></div>
+                        <div class="file-size" id="file-size"></div>
+                    </div>
+                    <button type="button" class="remove-file" onclick="removeFile()">
+                        削除
+                    </button>
+                </div>
+                <div class="data-preview" id="data-preview"></div>
+            </div>
+
+            <!-- 設定フォーム -->
+            <div class="form-group">
+                <label for="name">データセット名</label>
+                <input type="text" id="name" name="name" placeholder="例: 溶解度予測データ" required>
+            </div>
+
+            <div class="form-group">
+                <label for="smiles_col">SMILES列名</label>
+                <select id="smiles_col" name="smiles_col">
+                    <option value="SMILES">SMILES</option>
+                    <option value="smiles">smiles</option>
+                    <option value="Smiles">Smiles</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="target_col">ターゲット列名</label>
+                <select id="target_col" name="target_col">
+                    <option value="target">target</option>
+                    <option value="y">y</option>
+                    <option value="value">value</option>
+                </select>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submit-btn" disabled>
+                アップロード
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const filePreview = document.getElementById('file-preview');
+        const fileName = document.getElementById('file-name');
+        const fileSize = document.getElementById('file-size');
+        const submitBtn = document.getElementById('submit-btn');
+        const dataPreview = document.getElementById('data-preview');
+        const smilesSelect = document.getElementById('smiles_col');
+        const targetSelect = document.getElementById('target_col');
+
+        // ドラッグ&ドロップイベント
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // ファイル選択
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            // ファイル情報表示
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            filePreview.classList.add('active');
+            submitBtn.disabled = false;
+
+            // CSVプレビュー
+            if (file.name.endsWith('.csv')) {
+                previewCSV(file);
+            }
+        }
+
+        function previewCSV(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                const lines = text.split('\n').slice(0, 6); // 最初の6行
+                const rows = lines.map(line => line.split(','));
+
+                // 列名を選択肢に追加
+                if (rows.length > 0) {
+                    const headers = rows[0];
+                    updateColumnOptions(headers);
+                }
+
+                // テーブル表示
+                let table = '<table><thead><tr>';
+                rows[0].forEach(header => {
+                    table += `<th>${header}</th>`;
+                });
+                table += '</tr></thead><tbody>';
+
+                for (let i = 1; i < rows.length; i++) {
+                    table += '<tr>';
+                    rows[i].forEach(cell => {
+                        table += `<td>${cell}</td>`;
+                    });
+                    table += '</tr>';
+                }
+                table += '</tbody></table>';
+                dataPreview.innerHTML = table;
+            };
+            reader.readAsText(file);
+        }
+
+        function updateColumnOptions(headers) {
+            // SMILES列の候補を検出
+            smilesSelect.innerHTML = '';
+            targetSelect.innerHTML = '';
+
+            headers.forEach(header => {
+                const headerLower = header.toLowerCase().trim();
+
+                // SMILES候補
+                const smilesOption = document.createElement('option');
+                smilesOption.value = header;
+                smilesOption.textContent = header;
+                if (headerLower.includes('smiles')) {
+                    smilesOption.selected = true;
+                }
+                smilesSelect.appendChild(smilesOption);
+
+                // ターゲット候補
+                const targetOption = document.createElement('option');
+                targetOption.value = header;
+                targetOption.textContent = header;
+                if (headerLower.includes('target') ||
+                    headerLower.includes('value') ||
+                    headerLower.includes('y')) {
+                    targetOption.selected = true;
+                }
+                targetSelect.appendChild(targetOption);
+            });
+        }
+
+        function removeFile() {
+            fileInput.value = '';
+            filePreview.classList.remove('active');
+            submitBtn.disabled = true;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // デモデータセットロード
+        async function loadDemoDatasets() {
+            try {
+                const response = await fetch('/api/demo/datasets');
+                const data = await response.json();
+
+                const grid = document.getElementById('demo-grid');
+                grid.innerHTML = '';
+
+                data.datasets.slice(0, 3).forEach(ds => {
+                    const card = document.createElement('div');
+                    card.className = 'demo-card';
+                    card.onclick = () => useDemoDataset(ds.id);
+
+                    card.innerHTML = `
+                        <h4>${ds.name_ja}</h4>
+                        <p>${ds.n_molecules}分子</p>
+                        <span class="demo-badge">${ds.task_type}</span>
+                    `;
+
+                    grid.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Failed to load demo datasets:', error);
+            }
+        }
+
+        async function useDemoDataset(datasetId) {
+            try {
+                const response = await fetch(`/api/demo/datasets/${datasetId}`);
+                const data = await response.json();
+
+                // フォーム自動入力
+                document.getElementById('name').value = data.info.name_ja + ' (デモ)';
+
+                // 列名自動設定
+                updateColumnOptions([data.info.smiles_column, data.info.target_column]);
+
+                // プレビュー表示
+                let table = '<table><thead><tr>';
+                data.columns.forEach(col => {
+                    table += `<th>${col}</th>`;
+                });
+                table += '</tr></thead><tbody>';
+
+                data.preview.forEach(row => {
+                    table += '<tr>';
+                    data.columns.forEach(col => {
+                        table += `<td>${row[col] || ''}</td>`;
+                    });
+                    table += '</tr>';
+                });
+                table += '</tbody></table>';
+
+                filePreview.classList.add('active');
+                fileName.textContent = data.info.name_ja + '.csv (デモデータ)';
+                fileSize.textContent = `${data.total_rows}行`;
+                dataPreview.innerHTML = table;
+                submitBtn.disabled = false;
+
+                alert(`✅ ${data.info.name_ja}を読み込みました！\n\n${data.info.description}`);
+            } catch (error) {
+                console.error('Failed to use demo dataset:', error);
+                alert('デモデータの読み込みに失敗しました');
+            }
+        }
+
+        //ページ読み込み時
+        document.addEventListener('DOMContentLoaded', loadDemoDatasets);
+    </script>
 </body>
 
 </html>

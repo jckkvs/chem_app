@@ -1,0 +1,497 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>逆解析（インバースデザイン） - ChemML</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e65c00 0%, #f9d423 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 4px solid #e65c00;
+        }
+
+        .section h2 {
+            color: #e65c00;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin: 20px 0;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #e65c00;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+
+        .radio-group label:hover {
+            background: #fff;
+        }
+
+        .radio-group input[type="radio"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .constraint-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #e65c00 0%, #f9d423 100%);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(230, 92, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #e65c00;
+            border: 2px solid #e65c00;
+        }
+
+        #results {
+            display: none;
+        }
+
+        .candidate-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .candidate-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .rank-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #e65c00 0%, #f9d423 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .smiles-code {
+            background: #f0f4ff;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .properties-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .property {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .property-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .property-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            color: #0277bd;
+            border-left: 4px solid #0277bd;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔬 逆解析（インバースデザイン）</h1>
+        <p class="subtitle">目標物性から最適化合物を自動探索</p>
+
+        <!-- 設定フォーム -->
+        <div id="setup-form">
+            <div class="section">
+                <h2>📊 学習済みモデル選択</h2>
+                <div class="form-group">
+                    <label>実験を選択（COMPLETED状態のみ）</label>
+                    <select id="experiment-select">
+                        <option value="">-- 選択してください --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🎯 目標物性設定</h2>
+                <div class="form-group">
+                    <label>物性名</label>
+                    <input type="text" id="property-name" value="solubility" placeholder="例: solubility">
+                </div>
+                <div class="form-group">
+                    <label>目標値</label>
+                    <input type="number" step="0.1" id="target-value" placeholder="例: 2.0">
+                </div>
+                <div class="form-group">
+                    <label>最適化方向</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="direction" value="maximize" checked>
+                            <span>📈 最大化（値が大きいほど良い）</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="direction" value="minimize">
+                            <span>📉 最小化（値が小さいほど良い）</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="direction" value="target">
+                            <span>🎯 目標値（指定値に近いほど良い）</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>⚙️ 探索手法</h2>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="method" value="bayesian" checked>
+                        <span><strong>ベイズ最適化</strong>（推奨、効率的に最適解を発見）</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="method" value="random">
+                        <span><strong>ランダムサンプリング</strong>（幅広く探索）</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="method" value="exhaustive">
+                        <span><strong>全探索</strong>（既知ライブラリから選択、要ライブラリ）</span>
+                    </label>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>試行回数</label>
+                    <input type="number" id="n-iterations" value="100" min="10" max="500">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🔒 制約条件（オプション）</h2>
+                <p style="color: #666; font-size: 14px; margin-bottom: 15px;">指定しない場合は制約なし</p>
+                <div class="constraint-grid">
+                    <div class="form-group">
+                        <label>分子量 最小</label>
+                        <input type="number" id="mw-min" placeholder="例: 200">
+                    </div>
+                    <div class="form-group">
+                        <label>分子量 最大</label>
+                        <input type="number" id="mw-max" placeholder="例: 500">
+                    </div>
+                    <div class="form-group">
+                        <label>logP 最小</label>
+                        <input type="number" step="0.1" id="logp-min" placeholder="例: -2">
+                    </div>
+                    <div class="form-group">
+                        <label>logP 最大</label>
+                        <input type="number" step="0.1" id="logp-max" placeholder="例: 5">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" onclick="startInverseDesign()">🚀 探索開始</button>
+            <button class="btn btn-secondary" onclick="window.location.href='/experiments'">← 実験一覧に戻る</button>
+        </div>
+
+        <!-- 結果表示 -->
+        <div id="results">
+            <div class="alert alert-success" id="completion-message"></div>
+
+            <div class="section">
+                <h2>🏆 探索結果（トップ候補）</h2>
+                <div id="candidates-list"></div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="location.reload()">← 新しい探索</button>
+        </div>
+    </div>
+
+    <script>
+        let currentJobId = null;
+
+        // ページロード時に完了済み実験を取得
+        async function loadCompletedExperiments() {
+            try {
+                const response = await fetch('/api/experiments');
+                const data = await response.json();
+
+                const select = document.getElementById('experiment-select');
+                const completed = data.experiments.filter(e => e.status === 'COMPLETED');
+
+                completed.forEach(exp => {
+                    const option = document.createElement('option');
+                    option.value = exp.id;
+                    option.textContent = `${exp.name} (ID: ${exp.id})`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load experiments:', error);
+            }
+        }
+
+        // 探索開始
+        async function startInverseDesign() {
+            const experimentId = document.getElementById('experiment-select').value;
+            const propertyName = document.getElementById('property-name').value;
+            const targetValue = parseFloat(document.getElementById('target-value').value);
+            const direction = document.querySelector('input[name="direction"]:checked').value;
+            const method = document.querySelector('input[name="method"]:checked').value;
+            const nIterations = parseInt(document.getElementById('n-iterations').value);
+
+            if (!experimentId || !targetValue) {
+                alert('実験と目標値を入力してください');
+                return;
+            }
+
+            // 制約条件
+            const constraints = {};
+            const mwMin = document.getElementById('mw-min').value;
+            const mwMax = document.getElementById('mw-max').value;
+            const logpMin = document.getElementById('logp-min').value;
+            const logpMax = document.getElementById('logp-max').value;
+
+            if (mwMin || mwMax) {
+                constraints.molecular_weight = {};
+                if (mwMin) constraints.molecular_weight.min = parseFloat(mwMin);
+                if (mwMax) constraints.molecular_weight.max = parseFloat(mwMax);
+            }
+            if (logpMin || logpMax) {
+                constraints.logP = {};
+                if (logpMin) constraints.logP.min = parseFloat(logpMin);
+                if (logpMax) constraints.logP.max = parseFloat(logpMax);
+            }
+
+            try {
+                const response = await fetch('/api/inverse-design/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        experiment_id: experimentId,
+                        target: {
+                            property: propertyName,
+                            value: targetValue,
+                            direction: direction
+                        },
+                        method: method,
+                        n_iterations: nIterations,
+                        constraints: Object.keys(constraints).length > 0 ? constraints : null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '探索開始に失敗しました');
+                }
+
+                currentJobId = data.job_id;
+                alert(`✅ 探索を開始しました\n\nジョブID: ${data.job_id}\n推定時間: ${data.estimated_time}\n\n完了後、結果を表示します。`);
+
+                // 結果をポーリング
+                pollResults();
+
+            } catch (error) {
+                console.error('Failed to start:', error);
+                alert(`エラー: ${error.message}`);
+            }
+        }
+
+        // 結果ポーリング
+        async function pollResults() {
+            const checkStatus = async () => {
+                try {
+                    const response = await fetch(`/api/inverse-design/status/${currentJobId}`);
+                    const data = await response.json();
+
+                    if (data.status === 'COMPLETED') {
+                        loadResults();
+                    } else if (data.status === 'FAILED') {
+                        alert('探索に失敗しました');
+                    } else {
+                        // 5秒後に再チェック
+                        setTimeout(checkStatus, 5000);
+                    }
+                } catch (error) {
+                    console.error('Status check failed:', error);
+                }
+            };
+
+            checkStatus();
+        }
+
+        // 結果表示
+        async function loadResults() {
+            try {
+                const response = await fetch(`/api/inverse-design/results/${currentJobId}`);
+                const data = await response.json();
+
+                document.getElementById('setup-form').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+
+                const message = document.getElementById('completion-message');
+                message.textContent = `✅ 探索完了！${data.candidates.length}個の候補を発見しました。`;
+
+                const list = document.getElementById('candidates-list');
+                list.innerHTML = '';
+
+                data.candidates.slice(0, 20).forEach(candidate => {
+                    const card = document.createElement('div');
+                    card.className = 'candidate-card';
+                    card.innerHTML = `
+                        <span class="rank-badge"># ${candidate.rank}</span>
+                        <div class="smiles-code">${candidate.smiles}</div>
+                        <p><strong>予測値:</strong> ${candidate.predicted_value.toFixed(3)} | <strong>スコア:</strong> ${candidate.score.toFixed(4)}</p>
+                        <div class="properties-grid">
+                            <div class="property">
+                                <div class="property-label">分子量</div>
+                                <div class="property-value">${candidate.properties.molecular_weight.toFixed(1)}</div>
+                            </div>
+                            <div class="property">
+                                <div class="property-label">logP</div>
+                                <div class="property-value">${candidate.properties.logP.toFixed(2)}</div>
+                            </div>
+                            <div class="property">
+                                <div class="property-label">QED</div>
+                                <div class="property-value">${candidate.properties.QED.toFixed(3)}</div>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('Failed to load results:', error);
+                alert('結果の취得に失敗しました');
+            }
+        }
+
+        // ページロード時
+        document.addEventListener('DOMContentLoaded', loadCompletedExperiments);
+    </script>
+</body>
+
+</html>

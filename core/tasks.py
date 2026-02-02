@@ -394,3 +394,209 @@ def run_training_task(experiment_id: int):
             exp.save()
         except Exception:
             pass
+
+
+@huey.task()
+def run_tuning_task(experiment_id: int, tuning_config: Optional[Dict[str, Any]] = None):
+    """
+    ハイパーパラメータチューニング付き学習タスク
+    
+    Args:
+        experiment_id: 実験ID
+        tuning_config: チューニング設定
+            - method: 'random' or 'grid'
+            - n_iter: 試行回数（RandomizedSearchの場合）
+            - cv: CV fold数
+            - preset: 'fast', 'balanced', 'thorough'
+    """
+    logger.info(f"Tuning task started: experiment_id={experiment_id}")
+    
+    try:
+        from core.models import Dataset, Experiment
+        from core.services.ml.hyperparameter_tuner import HyperparameterTuner
+        from core.services.ml.ml_tracker import MLTracker
+        import pandas as pd
+        
+        exp = Experiment.objects.get(id=experiment_id)
+        exp.status = 'TUNING'
+        exp.save()
+        
+        # MLflow追跡
+        tracker = MLTracker(
+            experiment_name=f"tuning_exp_{exp.id}",
+            tracking_uri=getattr(settings, 'MLFL OW_TRACKING_URI', None)
+        )
+        
+        # データ読み込み
+        df = pd.read_csv(exp.dataset.file_path)
+        y = df[exp.dataset.target_col]
+        
+        # タスクタイプ取得
+        task_type = exp.config.get('task_type_mode', 'smiles_only')
+        
+        # 特徴量抽出（run_training_taskと同じロジック）
+        if task_type == 'smiles_only':
+            smiles = df[exp.dataset.smiles_col].tolist()
+            X = extract_features_smiles_only(smiles, y, exp.config, tracker)
+        elif task_type == 'tabular_only':
+            X = extract_features_tabular_only(df, y, exp.config, tracker)
+        elif task_type == 'mixture':
+            X = extract_features_mixture(df, y, exp.config, tracker)
+        elif task_type == 'smiles_tabular':
+            smiles = df[exp.dataset.smiles_col].tolist()
+            X = extract_features_smiles_tabular(df, smiles, y, exp.config, tracker)
+        else:
+            smiles = df[exp.dataset.smiles_col].tolist()
+            X = extract_features_smiles_only(smiles, y, exp.config, tracker)
+        
+        logger.info(f"Features for tuning: {X.shape}")
+        
+        # チューニング設定
+        if tuning_config is None:
+            tuning_config = {}
+        
+        tuner = HyperparameterTuner()
+        
+        # プリセット使用
+        preset = tuning_config.get('preset', 'fast')
+        if preset in ['fast', 'balanced', 'thorough']:
+            preset_config = tuner.get_preset_config(preset)
+            method = preset_config['method']
+            n_iter = preset_config.get('n_iter', 20)
+            cv = preset_config.get('cv', 5)
+        else:
+            method = tuning_config.get('method', 'random')
+            n_iter = tuning_config.get('n_iter', 20)
+            cv = tuning_config.get('cv', 5)
+        
+        model_type = exp.config.get('model_type', 'lightgbm')
+        
+        logger.info(f"Starting tuning: model={model_type}, method={method}, n_iter={n_iter}")
+        
+        # チューニング実行
+        result = tuner.tune(
+            model_type=model_type,
+            X=X, y=y,
+            method=method,
+            n_iter=n_iter,
+            cv=cv
+        )
+        
+        logger.info(
+            f"Tuning completed: best_score={result.best_score:.4f}, "
+            f"improvement={result.improvement:.2f}%"
+        )
+        
+        # 最適パラメータで再学習
+        exp.status = 'RUNNING'
+        exp.config['model_params'] = result.best_params
+        exp.save()
+        
+        from core.services.ml.pipeline import MLPipeline
+        
+        pipeline = MLPipeline(
+            model_type=model_type,
+            task_type=exp.config.get('task_type', 'regression'),
+            cv_folds=cv,
+            tracker=tracker,
+            config=exp.config,
+        )
+        
+        metrics = pipeline.train(X, y, run_name=f"exp_{exp.id}_tuned")
+        
+        # チューニング情報も保存
+        metrics['tuning_improvement'] = result.improvement
+        metrics['tuning_trials'] = result.total_trials
+        metrics['tuning_time'] = result.total_time
+        
+        exp.metrics = metrics
+        exp.status = 'COMPLETED'
+        exp.save()
+        
+        logger.info(f"Tuning experiment {exp.id} completed: {metrics}")
+        
+    except Exception as e:
+        logger.error(f"Tuning task failed: {e}", exc_info=True)
+        
+        try:
+            exp = Experiment.objects.get(id=experiment_id)
+            exp.status = 'FAILED'
+            exp.metrics = {'error': str(e)}
+            exp.save()
+        except Exception:
+            pass
+
+
+@huey.task()
+def run_inverse_design_task(job_id: int, library: Optional[List[str]] = None):
+    """
+    逆解析バックグラウンドタスク
+    
+    Args:
+        job_id: InverseDesignJob ID
+        library: 化合物ライブラリ（全探索の場合）
+    """
+    logger.info(f"Inverse design task started: job_id={job_id}")
+    
+    try:
+        from core.models import InverseDesignJob
+        from core.services.ml.inverse_design import InverseDesign
+        import pickle
+        import os
+        
+        job = InverseDesignJob.objects.get(id=job_id)
+        job.status = 'RUNNING'
+        job.save()
+        
+        # 学習済みモデルをロード
+        experiment = job.experiment
+        model_path = os.path.join(settings.BASE_DIR, 'mlruns', f'exp_{experiment.id}', 'model.pkl')
+        
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model not found: {model_path}")
+        
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        
+        # InverseDesign実行
+        designer = InverseDesign(model=model, property_name=job.target_property)
+        
+        candidates = designer.optimize(
+            target_value=job.target_value,
+            direction=job.direction,
+            method=job.method,
+            n_iterations=job.n_iterations,
+            constraints=job.constraints if job.constraints else None,
+            library=library
+        )
+        
+        # 結果を辞書に変換
+        results = {
+            'candidates': [
+                {
+                    'rank': c.rank,
+                    'smiles': c.smiles,
+                    'predicted_value': c.predicted_value,
+                    'score': c.score,
+                    'properties': c.properties
+                }
+                for c in candidates
+            ],
+            'total_evaluated': len(candidates)
+        }
+        
+        job.results = results
+        job.status = 'COMPLETED'
+        job.save()
+        
+        logger.info(f"Inverse design completed: {len(candidates)} candidates")
+        
+    except Exception as e:
+        logger.error(f"Inverse design failed: {e}", exc_info=True)
+        try:
+            job = InverseDesignJob.objects.get(id=job_id)
+            job.status = 'FAILED'
+            job.results = {'error': str(e)}
+            job.save()
+        except Exception:
+            pass

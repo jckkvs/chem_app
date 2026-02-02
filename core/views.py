@@ -31,6 +31,31 @@ def predict(request):
     return render(request, 'predict.html')
 
 
+def quick_predict_page(request):
+    """ワンクリック予測ページ"""
+    return render(request, 'core/quick_predict.html')
+
+
+def wizard_page(request):
+    """AIウィザードページ"""
+    return render(request, 'core/wizard.html')
+
+
+def templates_page(request):
+    """プリセットテンプレートページ"""
+    return render(request, 'core/templates.html')
+
+
+def inverse_design_page(request):
+    """逆解析（インバースデザイン）ページ"""
+    return render(request, 'core/inverse_design.html')
+
+
+def generate_page(request):
+    """分子生成AIページ"""
+    return render(request, 'core/generate.html')
+
+
 # ========== PWA関連 ==========
 
 @require_GET

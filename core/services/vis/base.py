@@ -112,32 +112,75 @@ class BaseVisualizer(ABC):
     def _save_png(self, fig: Any, path: Path, dpi: int = 300, **kwargs) -> None:
         """PNG形式で保存（matplotlibの場合）"""
         if hasattr(fig, 'savefig'):
+            # matplotlib figure
             fig.savefig(path, dpi=dpi, bbox_inches='tight', **kwargs)
+        elif hasattr(fig, 'write_image'):
+            # Plotly figure with kaleido
+            try:
+                fig.write_image(path, format='png', **kwargs)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to export PNG. Plotly figures require 'kaleido' package. "
+                    f"Install with: pip install kaleido. Error: {e}"
+                ) from e
         else:
-            raise NotImplementedError("PNG export not supported for this figure type")
+            fig_type = type(fig).__name__
+            raise TypeError(
+                f"PNG export not supported for figure type '{fig_type}'. "
+                f"Supported types: matplotlib.Figure (with savefig method), "
+                f"plotly.graph_objs.Figure (with write_image method, requires kaleido)."
+            )
     
     def _save_svg(self, fig: Any, path: Path, **kwargs) -> None:
         """SVG形式で保存"""
         if hasattr(fig, 'savefig'):
+            # matplotlib figure
             fig.savefig(path, format='svg', **kwargs)
+        elif hasattr(fig, 'write_image'):
+            # Plotly figure with kaleido
+            try:
+                fig.write_image(path, format='svg', **kwargs)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to export SVG. Plotly figures require 'kaleido' package. "
+                    f"Install with: pip install kaleido. Error: {e}"
+                ) from e
         else:
-            raise NotImplementedError("SVG export not supported for this figure type")
+            fig_type = type(fig).__name__
+            raise TypeError(
+                f"SVG export not supported for figure type '{fig_type}'. "
+                f"Supported types: matplotlib.Figure, plotly.graph_objs.Figure (requires kaleido)."
+            )
     
     def _save_html(self, fig: Any, path: Path, **kwargs) -> None:
         """HTML形式で保存（Plotlyの場合）"""
         if hasattr(fig, 'write_html'):
+            # Plotly figure
             fig.write_html(path, **kwargs)
         else:
-            raise NotImplementedError("HTML export not supported for this figure type")
+            fig_type = type(fig).__name__
+            raise TypeError(
+                f"HTML export not supported for figure type '{fig_type}'. "
+                f"Only plotly.graph_objs.Figure is supported for HTML export."
+            )
     
     def _save_json(self, fig: Any, path: Path, **kwargs) -> None:
         """JSON形式で保存（Plotlyの場合）"""
         import json
         if hasattr(fig, 'to_json'):
+            # Plotly figure
             with open(path, 'w') as f:
                 f.write(fig.to_json())
+        elif hasattr(fig, 'to_dict'):
+            # Plotly figure (alternative method)
+            with open(path, 'w') as f:
+                json.dump(fig.to_dict(), f, indent=2)
         else:
-            raise NotImplementedError("JSON export not supported for this figure type")
+            fig_type = type(fig).__name__
+            raise TypeError(
+                f"JSON export not supported for figure type '{fig_type}'. "
+                f"Only plotly.graph_objs.Figure is supported for JSON export."
+            )
     
     def to_base64(self, fig: Any, format: OutputFormat = 'png') -> str:
         """
@@ -157,14 +200,42 @@ class BaseVisualizer(ABC):
         
         if format == 'png':
             if hasattr(fig, 'savefig'):
+                # matplotlib figure
                 fig.savefig(buffer, format='png', bbox_inches='tight')
+            elif hasattr(fig, 'to_image'):
+                # Plotly figure with kaleido
+                try:
+                    buffer.write(fig.to_image(format='png'))
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to generate PNG. Plotly figures require 'kaleido' package. "
+                        f"Install with: pip install kaleido. Error: {e}"
+                    ) from e
             else:
-                raise NotImplementedError()
+                fig_type = type(fig).__name__
+                raise TypeError(
+                    f"PNG base64 encoding not supported for figure type '{fig_type}'. "
+                    f"Supported: matplotlib.Figure, plotly.graph_objs.Figure (requires kaleido)."
+                )
         elif format == 'svg':
             if hasattr(fig, 'savefig'):
+                # matplotlib figure
                 fig.savefig(buffer, format='svg')
+            elif hasattr(fig, 'to_image'):
+                # Plotly figure with kaleido
+                try:
+                    buffer.write(fig.to_image(format='svg'))
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to generate SVG. Plotly figures require 'kaleido' package. "
+                        f"Install with: pip install kaleido. Error: {e}"
+                    ) from e
             else:
-                raise NotImplementedError()
+                fig_type = type(fig).__name__
+                raise TypeError(
+                    f"SVG base64 encoding not supported for figure type '{fig_type}'. "
+                    f"Supported: matplotlib.Figure, plotly.graph_objs.Figure (requires kaleido)."
+                )
         else:
             raise ValueError(f"Format {format} not supported for base64 encoding")
         

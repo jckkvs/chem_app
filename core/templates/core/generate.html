@@ -1,0 +1,592 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分子生成AI - ChemML</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab:hover {
+            background: #f8f9fa;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin: 20px 0;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .molecule-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .molecule-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .smiles-code {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            word-break: break-all;
+            font-size: 14px;
+        }
+
+        .properties-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .property {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .property-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .property-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            color: #0277bd;
+            border-left: 4px solid #0277bd;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>💡 分子生成AI</h1>
+        <p class="subtitle">MolGPTによる自動分子設計</p>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('basic')">基本生成</button>
+            <button class="tab" onclick="switchTab('conditional')">条件付き生成</button>
+            <button class="tab" onclick="switchTab('text')">自然言語生成</button>
+        </div>
+
+        <!-- 基本生成タブ -->
+        <div id="tab-basic" class="tab-content active">
+            <div class="section">
+                <h2>⚙️ 生成設定</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>生成分子数</label>
+                        <input type="number" id="basic-n-molecules" value="10" min="1" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Temperature（多様性）</label>
+                        <input type="number" step="0.1" id="basic-temperature" value="1.0" min="0.1" max="2.0">
+                    </div>
+                    <div class="form-group">
+                        <label>最大長</label>
+                        <input type="number" id="basic-max-length" value="100" min="10" max="200">
+                    </div>
+                    <div class="form-group">
+                        <label>検証を実行</label>
+                        <select id="basic-validate">
+                            <option value="true">はい（推奨）</option>
+                            <option value="false">いいえ</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn" onclick="generateBasic()">🚀 生成開始</button>
+            </div>
+        </div>
+
+        <!-- 条件付き生成タブ -->
+        <div id="tab-conditional" class="tab-content">
+            <div class="section">
+                <h2>🎯 目標物性</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>logP（脂溶性）</label>
+                        <input type="number" step="0.1" id="cond-logp" placeholder="例: 2.5">
+                    </div>
+                    <div class="form-group">
+                        <label>分子量（MW）</label>
+                        <input type="number" id="cond-mw" placeholder="例: 300">
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <h2>⚙️ 生成設定</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>生成分子数</label>
+                        <input type="number" id="cond-n-molecules" value="10" min="1" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label>Temperature</label>
+                        <input type="number" step="0.1" id="cond-temperature" value="0.8" min="0.1" max="2.0">
+                    </div>
+                </div>
+                <button class="btn" onclick="generateConditional()">🚀 条件付き生成開始</button>
+            </div>
+        </div>
+
+        <!-- 自然言語生成タブ -->
+        <div id="tab-text" class="tab-content">
+            <div class="section">
+                <h2>💬 分子の説明</h2>
+                <div class="form-group">
+                    <label>求める分子の特徴を自然言語で記述</label>
+                    <textarea id="text-description" rows="4" placeholder="例: 水溶性が高く、血液脳関門を通過しやすい抗がん剤"></textarea>
+                </div>
+                <div class="alert alert-info">
+                    💡 <strong>Note</strong>: この機能は現在開発中です（Phase 2でMolT5統合予定）。現時点では基本生成にフォールバックします。
+                </div>
+                <div class="form-group">
+                    <label>生成分子数</label>
+                    <input type="number" id="text-n-molecules" value="5" min="1" max="50">
+                </div>
+                <button class="btn" onclick="generateFromText()">🚀 生成開始</button>
+            </div>
+        </div>
+
+        <!-- ローディング -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>生成中... 数秒かかります</p>
+        </div>
+
+        <!-- 結果表示 -->
+        <div class="results" id="results">
+            <div class="alert alert-success" id="success-message"></div>
+            <div id="molecules-list"></div>
+            <button class="btn btn-secondary" onclick="reset()">← 新しい生成</button>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            // タブ切り替え
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        async function generateBasic() {
+            const nMolecules = parseInt(document.getElementById('basic-n-molecules').value);
+            const temperature = parseFloat(document.getElementById('basic-temperature').value);
+            const maxLength = parseInt(document.getElementById('basic-max-length').value);
+            const validate = document.getElementById('basic-validate').value === 'true';
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/generate/molecules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        n_molecules: nMolecules,
+                        temperature: temperature,
+                        max_length: maxLength,
+                        validate: validate
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '生成に失敗しました');
+                }
+
+                displayResults(data.molecules, `${data.count}個の分子を生成しました`);
+
+            } catch (error) {
+                console.error('Generation failed:', error);
+                alert(`エラー: ${error.message}`);
+                hideLoading();
+            }
+        }
+
+        async function generateConditional() {
+            const nMolecules = parseInt(document.getElementById('cond-n-molecules').value);
+            const temperature = parseFloat(document.getElementById('cond-temperature').value);
+            const logP = parseFloat(document.getElementById('cond-logp').value);
+            const mw = parseFloat(document.getElementById('cond-mw').value);
+
+            const properties = {};
+            if (!isNaN(logP)) properties.logP = logP;
+            if (!isNaN(mw)) properties.MW = mw;
+
+            if (Object.keys(properties).length === 0) {
+                alert('少なくとも1つの物性を指定してください');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/generate/conditional', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        n_molecules: nMolecules,
+                        properties: properties,
+                        temperature: temperature,
+                        validate: true
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '生成に失敗しました');
+                }
+
+                displayResults(data.molecules, `目標物性に合致する${data.count}個の分子を生成しました`);
+
+            } catch (error) {
+                console.error('Generation failed:', error);
+                alert(`エラー: ${error.message}`);
+                hideLoading();
+            }
+        }
+
+        async function generateFromText() {
+            const description = document.getElementById('text-description').value;
+            const nMolecules = parseInt(document.getElementById('text-n-molecules').value);
+
+            if (!description) {
+                alert('分子の説明を入力してください');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/generate/from-text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        description: description,
+                        n_molecules: nMolecules
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '生成に失敗しました');
+                }
+
+                displayResults(data.molecules, `「${description}」に基づいて分子を生成しました（${data.note}）`);
+
+            } catch (error) {
+                console.error('Generation failed:', error);
+                alert(`エラー: ${error.message}`);
+                hideLoading();
+            }
+        }
+
+        function displayResults(molecules, message) {
+            hideLoading();
+
+            document.getElementById('success-message').textContent = message;
+
+            const list = document.getElementById('molecules-list');
+            list.innerHTML = '';
+
+            molecules.forEach((mol, index) => {
+                const card = document.createElement('div');
+                card.className = 'molecule-card';
+
+                let html = `
+                    <h3>分子 #${index + 1}</h3>
+                    <div class="smiles-code">${mol.smiles}</div>
+                `;
+
+                if (mol.validation) {
+                    const v = mol.validation;
+                    const validBadge = v.is_valid ?
+                        '<span class="badge badge-success">✓ 妥当</span>' :
+                        '<span class="badge badge-danger">✗ 不正</span>';
+
+                    html += `
+                        <div style="margin: 10px 0;">${validBadge}</div>
+                        <div class="properties-grid">
+                            ${v.qed_score !== null ? `
+                                <div class="property">
+                                    <div class="property-label">QED</div>
+                                    <div class="property-value">${v.qed_score.toFixed(3)}</div>
+                                </div>
+                            ` : ''}
+                            ${v.molecular_weight !== null ? `
+                                <div class="property">
+                                    <div class="property-label">分子量</div>
+                                    <div class="property-value">${v.molecular_weight.toFixed(1)}</div>
+                                </div>
+                            ` : ''}
+                            ${v.logp !== null ? `
+                                <div class="property">
+                                    <div class="property-label">logP</div>
+                                    <div class="property-value">${v.logp.toFixed(2)}</div>
+                                </div>
+                            ` : ''}
+                            ${v.lipinski_violations !== null ? `
+                                <div class="property">
+                                    <div class="property-label">Lipinski違反</div>
+                                    <div class="property-value">${v.lipinski_violations}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = html;
+                list.appendChild(card);
+            });
+
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.querySelectorAll('.btn').forEach(btn => btn.disabled = true);
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.querySelectorAll('.btn').forEach(btn => btn.disabled = false);
+        }
+
+        function reset() {
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('molecules-list').innerHTML = '';
+        }
+    </script>
+</body>
+
+</html>

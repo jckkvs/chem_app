@@ -111,6 +111,40 @@ def create_parser() -> argparse.ArgumentParser:
         help="Resource to list"
     )
     
+    # === generate コマンド ===
+    generate_parser = subparsers.add_parser(
+        "generate", help="Generate molecules using AI"
+    )
+    generate_parser.add_argument(
+        "--n-molecules", "-n", type=int, default=10,
+        help="Number of molecules to generate"
+    )
+    generate_parser.add_argument(
+        "--temperature", "-t", type=float, default=1.0,
+        help="Sampling temperature (0.1-2.0)"
+    )
+    generate_parser.add_argument(
+        "--output", "-o", type=str, required=True,
+        help="Output CSV file"
+    )
+    generate_parser.add_argument(
+        "--mode", choices=["random", "conditional", "scaffold"],
+        default="random", help="Generation mode"
+    )
+    generate_parser.add_argument(
+        "--logP", type=float, help="Target logP (conditional mode)"
+    )
+    generate_parser.add_argument(
+        "--MW", type=float, help="Target molecular weight (conditional mode)"
+    )
+    generate_parser.add_argument(
+        "--scaffold", type=str, help="Scaffold SMILES (scaffold mode)"
+    )
+    generate_parser.add_argument(
+        "--validate", action="store_true", default=True,
+        help="Validate generated molecules"
+    )
+    
     return parser
 
 
@@ -316,6 +350,83 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_generate(args: argparse.Namespace) -> int:
+    """生成コマンド"""
+    from core.services.generation import MolGPTGenerator, GeneratedMoleculeValidator
+    
+    print(f"Generating {args.n_molecules} molecules...")
+    
+    try:
+        generator = MolGPTGenerator()
+        validator = GeneratedMoleculeValidator() if args.validate else None
+        
+        # 生成モード選択
+        if args.mode == "random":
+            molecules = generator.generate(
+                n_molecules=args.n_molecules,
+                temperature=args.temperature
+            )
+        
+        elif args.mode == "conditional":
+            properties = {}
+            if args.logP is not None:
+                properties['logP'] = args.logP
+            if args.MW is not None:
+                properties['MW'] = args.MW
+            
+            if not properties:
+                print("Error: --logP or --MW required for conditional mode")
+                return 1
+            
+            molecules = generator.conditional_generate(
+                properties=properties,
+                n_molecules=args.n_molecules,
+                temperature=args.temperature
+            )
+        
+        elif args.mode == "scaffold":
+            if not args.scaffold:
+                print("Error: --scaffold required for scaffold mode")
+                return 1
+            
+            molecules = generator.scaffold_optimization(
+                scaffold_smiles=args.scaffold,
+                target_property='logP',
+                target_value=args.logP or 2.0,
+                n_molecules=args.n_molecules,
+                temperature=args.temperature
+            )
+        
+        # 検証
+        results = []
+        for mol in molecules:
+            result = {'smiles': mol.smiles, 'score': mol.score}
+            
+            if validator:
+                validation = validator.validate(mol.smiles)
+                result['valid'] = validation.is_valid
+                result['qed'] = validation.qed_score
+                result['lipinski_violations'] = validation.lipinski_violations
+            
+            results.append(result)
+        
+        # CSV保存
+        df = pd.DataFrame(results)
+        df.to_csv(args.output, index=False)
+        
+        print(f"\nGenerated {len(results)} molecules")
+        if validator:
+            valid_count = sum(1 for r in results if r.get('valid', True))
+            print(f"Valid molecules: {valid_count}/{len(results)}")
+        print(f"Saved to {args.output}")
+        
+        return 0
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        return 1
+
+
 def main() -> int:
     """メイン関数"""
     parser = create_parser()
@@ -331,6 +442,7 @@ def main() -> int:
         "train": cmd_train,
         "analyze": cmd_analyze,
         "list": cmd_list,
+        "generate": cmd_generate,
     }
     
     return commands[args.command](args)

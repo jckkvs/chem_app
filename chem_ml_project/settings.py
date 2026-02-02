@@ -33,11 +33,17 @@ if not SECRET_KEY:
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # ALLOWED_HOSTS: Environment variable (default: localhost only)
+ALLOWED_HOSTS_RAW = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 ALLOWED_HOSTS = [
     s.strip() 
-    for s in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    for s in ALLOWED_HOSTS_RAW.split(',')
     if s.strip()
 ]
+
+# テスト環境用：Django TestCaseのtestserverを許可
+import sys
+if 'test' in sys.argv or 'pytest' in sys.modules:
+    ALLOWED_HOSTS.append('testserver')
 
 # Application definition
 
@@ -122,9 +128,23 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Security Settings for Production
 # ==============================================================================
 
-if not DEBUG:
-    # Force HTTPS
-    SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'True').lower() == 'true'
+# テスト環境判定
+IS_TESTING = 'test' in sys.argv or 'pytest' in sys.modules
+
+# セキュリティ設定の有効化判定
+# - 本番環境（DEBUG=False）では常に有効
+# - テスト環境では環境変数で制御可能（デフォルト: 本番設定をテスト）
+ENABLE_PRODUCTION_SECURITY = not DEBUG or (
+    IS_TESTING and os.environ.get('TEST_PRODUCTION_SECURITY', 'True').lower() == 'true'
+)
+
+if ENABLE_PRODUCTION_SECURITY:
+    # Force HTTPS (本番環境のみ、テスト時は環境変数で制御)
+    if not IS_TESTING:
+        SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL_REDIRECT', 'True').lower() == 'true'
+    else:
+        # テスト環境ではSSLリダイレクトを無効化（ローカルテスト用）
+        SECURE_SSL_REDIRECT = False
     
     # Secure cookies
     SESSION_COOKIE_SECURE = True
@@ -139,3 +159,10 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = 'DENY'
+else:
+    # 開発環境のみセキュリティ設定を緩和
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
+

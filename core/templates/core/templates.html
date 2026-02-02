@@ -1,0 +1,514 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プリセットテンプレート - ChemML</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .template-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .template-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        .template-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .template-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .template-description {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .template-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 8px;
+            margin-top: 5px;
+        }
+
+        /* モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-icon {
+            font-size: 48px;
+            margin-right: 20px;
+        }
+
+        .modal-title {
+            flex: 1;
+        }
+
+        .modal-title h2 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .modal-title p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .modal-section {
+            margin: 25px 0;
+        }
+
+        .modal-section h3 {
+            color: #667eea;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .modal-section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .modal-section li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .modal-section li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .dataset-selector {
+            margin: 20px 0;
+        }
+
+        .dataset-option {
+            background: #f0f4ff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .dataset-option:hover {
+            border-color: #667eea;
+            background: #e8f0fe;
+        }
+
+        .dataset-option.selected {
+            border-color: #667eea;
+            background: #e8f0fe;
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            padding: 10px 20px;
+            background: #f0f4ff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📋 プリセットモデルテンプレート</h1>
+        <p class="subtitle">用途に合わせて最適な設定を選択してください</p>
+
+        <!-- フィルタタブ -->
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterTemplates('all')">すべて</button>
+            <button class="filter-tab" onclick="filterTemplates('beginner')">初心者向け</button>
+            <button class="filter-tab" onclick="filterTemplates('intermediate')">中級者向け</button>
+            <button class="filter-tab" onclick="filterTemplates('regression')">回帰問題</button>
+            <button class="filter-tab" onclick="filterTemplates('classification')">分類問題</button>
+        </div>
+
+        <!-- テンプレートグリッド -->
+        <div class="templates-grid" id="templates-grid"></div>
+    </div>
+
+    <!-- テンプレート詳細モーダル -->
+    <div class="modal" id="template-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+
+            <div class="modal-header">
+                <div class="modal-icon" id="modal-icon"></div>
+                <div class="modal-title">
+                    <h2 id="modal-name"></h2>
+                    <p id="modal-description"></p>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <h3>✅ 長所</h3>
+                <ul id="modal-pros"></ul>
+            </div>
+
+            <div class="modal-section">
+                <h3>⚠️ 短所</h3>
+                <ul id="modal-cons"></ul>
+            </div>
+
+            <div class="modal-section">
+                <h3>📊 適用例</h3>
+                <ul id="modal-use-cases"></ul>
+            </div>
+
+            <div class="modal-section">
+                <h3>⚙️ 推奨設定</h3>
+                <p><strong>モデル:</strong> <span id="modal-model"></span></p>
+                <p><strong>タスク:</strong> <span id="modal-task"></span></p>
+                <p><strong>予想時間:</strong> <span id="modal-time"></span></p>
+            </div>
+
+            <div class="dataset-selector">
+                <h3>データセットを選択</h3>
+                <div id="dataset-list"></div>
+            </div>
+
+            <button class="btn" id="start-btn" onclick="startTraining()" disabled>
+                このテンプレートで学習開始
+            </button>
+            <button class="btn btn-secondary" onclick="closeModal()">
+                戻る
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let allTemplates = [];
+        let currentTemplate = null;
+        let selectedDataset = null;
+        let demoDatasets = [];
+
+        // テンプレート一覧ロード
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/templates');
+                const data = await response.json();
+                allTemplates = data.templates;
+                displayTemplates(allTemplates);
+            } catch (error) {
+                console.error('Failed to load templates:', error);
+            }
+        }
+
+        // テンプレート表示
+        function displayTemplates(templates) {
+            const grid = document.getElementById('templates-grid');
+            grid.innerHTML = '';
+
+            templates.forEach(template => {
+                const card = document.createElement('div');
+                card.className = 'template-card';
+                card.onclick = () => showTemplateDetail(template.id);
+
+                card.innerHTML = `
+                    <div class="template-icon">${template.icon}</div>
+                    <div class="template-name">${template.name_ja}</div>
+                    <div class="template-description">${template.description}</div>
+                    <span class="template-badge">${template.difficulty === 'beginner' ? '初心者向け' : '中級者向け'}</span>
+                    <span class="template-badge">${template.task_type === 'regression' ? '回帰' : '分類'}</span>
+                    <span class="template-badge">⏱️ ${template.estimated_time}</span>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // フィルタ
+        function filterTemplates(filter) {
+            // タブのアクティブ状態更新
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            let filtered = allTemplates;
+
+            if (filter === 'all') {
+                filtered = allTemplates;
+            } else if (filter === 'beginner' || filter === 'intermediate') {
+                filtered = allTemplates.filter(t => t.difficulty === filter);
+            } else if (filter === 'regression' || filter === 'classification') {
+                filtered = allTemplates.filter(t => t.task_type === filter);
+            }
+
+            displayTemplates(filtered);
+        }
+
+        // テンプレート詳細表示
+        async function showTemplateDetail(templateId) {
+            try {
+                const response = await fetch(`/api/templates/${templateId}`);
+                currentTemplate = await response.json();
+
+                // モーダル表示
+                document.getElementById('modal-icon').textContent = currentTemplate.icon;
+                document.getElementById('modal-name').textContent = currentTemplate.name_ja;
+                document.getElementById('modal-description').textContent = currentTemplate.description;
+
+                // 長所
+                const prosList = document.getElementById('modal-pros');
+                prosList.innerHTML = currentTemplate.pros.map(p => `<li>${p}</li>`).join('');
+
+                // 短所
+                const consList = document.getElementById('modal-cons');
+                consList.innerHTML = currentTemplate.cons.map(c => `<li>${c}</li>`).join('');
+
+                // 適用例
+                const useCasesList = document.getElementById('modal-use-cases');
+                useCasesList.innerHTML = currentTemplate.use_cases.map(u => `<li>${u}</li>`).join('');
+
+                // 推奨設定
+                document.getElementById('modal-model').textContent = currentTemplate.model_type;
+                document.getElementById('modal-task').textContent = currentTemplate.task_type === 'regression' ? '回帰問題' : '分類問題';
+                document.getElementById('modal-time').textContent = currentTemplate.estimated_time;
+
+                // データセット一覧
+                await loadDatasets();
+
+                document.getElementById('template-modal').classList.add('active');
+            } catch (error) {
+                console.error('Failed to load template detail:', error);
+            }
+        }
+
+        // データセット一覧ロード
+        async function loadDatasets() {
+            try {
+                const response = await fetch('/api/demo/datasets');
+                const data = await response.json();
+                demoDatasets = data.datasets;
+
+                const datasetList = document.getElementById('dataset-list');
+                datasetList.innerHTML = '';
+
+                demoDatasets.forEach(ds => {
+                    const option = document.createElement('div');
+                    option.className = 'dataset-option';
+                    option.onclick = () => selectDataset(ds);
+                    option.innerHTML = `
+                        <strong>${ds.name_ja}</strong><br>
+                        <small>${ds.n_molecules}分子 - ${ds.description}</small>
+                    `;
+                    datasetList.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load datasets:', error);
+            }
+        }
+
+        // データセット選択
+        function selectDataset(dataset) {
+            selectedDataset = dataset;
+
+            // 選択状態を視覚化
+            document.querySelectorAll('.dataset-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+
+            // ボタン有効化
+            document.getElementById('start-btn').disabled = false;
+        }
+
+        // 学習開始
+        async function startTraining() {
+            if (!currentTemplate || !selectedDataset) {
+                alert('テンプレートまたはデータセットが選択されていません');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/training/start-from-template', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        dataset_id: selectedDataset.id,
+                        template_id: currentTemplate.id,
+                        experiment_name: `${selectedDataset.name_ja} - ${currentTemplate.name_ja}`
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '学習開始に失敗しました');
+                }
+
+                alert(`✅ ${data.message}\n\n実験ID: ${data.experiment_id}\n\n進捗は実験一覧で確認できます。`);
+                window.location.href = '/experiments';
+
+            } catch (error) {
+                console.error('Failed to start training:', error);
+                alert(`エラー: ${error.message}`);
+            }
+        }
+
+        // モーダルを閉じる
+        function closeModal() {
+            document.getElementById('template-modal').classList.remove('active');
+            selectedDataset = null;
+            document.getElementById('start-btn').disabled = true;
+        }
+
+        // ページロード時
+        document.addEventListener('DOMContentLoaded', loadTemplates);
+    </script>
+</body>
+
+</html>
