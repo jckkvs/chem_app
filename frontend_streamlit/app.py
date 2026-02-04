@@ -53,6 +53,16 @@ except ImportError:
         def render_timeseries_settings():
             st.error("Time series UI module not found")
 
+# EDAダッシュボードモジュール
+try:
+    from eda_dashboard_ui import render_eda_dashboard
+except ImportError:
+    try:
+        from frontend_streamlit.eda_dashboard_ui import render_eda_dashboard
+    except ImportError:
+        def render_eda_dashboard():
+            st.error("EDA dashboard module not found")
+
 
 # API險ｭ螳
 API_URL = "http://127.0.0.1:8000/api"
