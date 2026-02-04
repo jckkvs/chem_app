@@ -29,7 +29,7 @@ class BaseFeatureExtractor(ABC):
     Subclasses:
     - RDKitFeatureExtractor: 分子記述子
     - XTBFeatureExtractor: 量子化学記述子
-    - UMAFeatureExtractor: UMAP埋め込み
+    - UMAPFeatureExtractor: UMAP埋め込み（次元削減）
     """
     
     def __init__(self, **kwargs):

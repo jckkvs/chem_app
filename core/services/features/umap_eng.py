@@ -1,11 +1,13 @@
 """
-UMAP特徴量抽出エンジン - Metric Learning対応版
+UMAP特徴量抽出エンジン - 次元削減
 
-Implements: F-004
+Implements: F-UMAP-001
 設計思想:
 - RDKit記述子をベースにUMAP次元削減
 - Supervised UMAP（ターゲット変数を考慮）
 - 学習済みモデルの永続化・再利用
+
+注意: UMA (Meta社の機械学習ポテンシャル)とは別物です
 
 参考文献:
 - UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction
@@ -31,7 +33,7 @@ from .rdkit_eng import RDKitFeatureExtractor
 logger = logging.getLogger(__name__)
 
 
-class UMAFeatureExtractor(BaseFeatureExtractor):
+class UMAPFeatureExtractor(BaseFeatureExtractor):
     """
     UMAP (Uniform Manifold Approximation and Projection) 特徴量抽出器
     
@@ -44,7 +46,7 @@ class UMAFeatureExtractor(BaseFeatureExtractor):
     - 埋め込みモデルの永続化
     
     Example:
-        >>> extractor = UMAFeatureExtractor(n_components=10)
+        >>> extractor = UMAPFeatureExtractor(n_components=10)
         >>> extractor.fit(smiles_list, y=target)
         >>> embeddings = extractor.transform(smiles_list)
     """
@@ -92,7 +94,7 @@ class UMAFeatureExtractor(BaseFeatureExtractor):
         self, 
         smiles_list: List[str], 
         y: Optional[Any] = None
-    ) -> 'UMAFeatureExtractor':
+    ) -> 'UMAPFeatureExtractor':
         """
         UMAPモデルを学習
         

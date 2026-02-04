@@ -12,7 +12,7 @@
 ### 特徴量抽出器
 - RDKitFeatureExtractor: 分子記述子
 - XTBFeatureExtractor: 量子化学記述子（要xtb）
-- UMAFeatureExtractor: UMAP埋め込み
+- UMAPFeatureExtractor: UMAP埋め込み（次元削減）
 - TarteFeatureExtractor: Transformer表形式特徴量（要tarte-ai）
 
 ### 深層学習埋め込み
@@ -139,7 +139,7 @@ from .ssl_embeddings import (
     get_ssl_embeddings,
 )
 from .tarte_eng import TarteFeatureExtractor, is_tarte_available
-from .uma_eng import UMAFeatureExtractor
+from .umap_eng import UMAPFeatureExtractor
 from .xtb_eng import XTBFeatureExtractor
 
 __all__ = [
@@ -149,7 +149,7 @@ __all__ = [
     # 従来の抽出器
     "RDKitFeatureExtractor",
     "XTBFeatureExtractor",
-    "UMAFeatureExtractor",
+    "UMAPFeatureExtractor",
     "TarteFeatureExtractor",
     "is_tarte_available",
     

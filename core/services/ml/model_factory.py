@@ -74,9 +74,24 @@ AVAILABLE_LIBRARIES = {
     'pytorch_tabular': is_library_available('pytorch_tabular'),
     'rtdl': is_library_available('rtdl'),
     
+    # Linear Models (Advanced)
+    'asgl': is_library_available('asgl'),  # Adaptive Sparse Group Lasso
+    
+    # AutoML
+    'tabpfn': is_library_available('tabpfn'),
+    'tpot': is_library_available('tpot'),
+    'autosklearn': is_library_available('autosklearn'),
+    'pycaret': is_library_available('pycaret'),
+    'autogluon': is_library_available('autogluon'),
+    
+    # Time Series
+    'prophet': is_library_available('prophet'),
+    'tsfresh': is_library_available('tsfresh'),
+    
     # Other
     'ngboost': is_library_available('ngboost'),
     'optuna': is_library_available('optuna'),
+    'pykan': is_library_available('kan'),  # Kolmogorov-Arnold Networks
 }
 
 
@@ -347,6 +362,75 @@ class ModelRegistry:
                 logger.info("RTDL検出されました（研究用DLモデル）")
             except Exception as e:
                 logger.warning(f"RTDLインポート失敗: {e}")
+        
+        # ===== ASGL (Adaptive Sparse Group Lasso) =====
+        if AVAILABLE_LIBRARIES['asgl']:
+            try:
+                from asgl import Regressor as ASGLRegressor
+                
+                self.register('regression', 'asgl', ASGLRegressor, {'model': 'lasso'})
+                self.register('regression', 'adaptive_lasso', ASGLRegressor, {'model': 'alasso'})
+                self.register('regression', 'group_lasso', ASGLRegressor, {'model': 'gl'})
+                self.register('regression', 'sparse_group_lasso', ASGLRegressor, {'model': 'sgl'})
+                
+                logger.info("ASGL統合成功: AdaptiveLasso, GroupLasso, SparseGroupLasso")
+            except ImportError as e:
+                logger.warning(f"ASGLインポート失敗: {e}")
+        
+        # ===== TabPFN (Tabular Prior-Data Fitted Networks) =====
+        if AVAILABLE_LIBRARIES['tabpfn']:
+            try:
+                from tabpfn import TabPFNClassifier
+                
+                self.register('classification', 'tabpfn', TabPFNClassifier, {'device': 'cpu'})
+                
+                logger.info("TabPFN統合成功: TabPFNClassifier")
+            except ImportError as e:
+                logger.warning(f"TabPFNインポート失敗: {e}")
+        
+        # ===== TPOT (Tree-based Pipeline Optimization Tool) =====
+        if AVAILABLE_LIBRARIES['tpot']:
+            try:
+                from tpot import TPOTRegressor, TPOTClassifier
+                
+                self.register('regression', 'tpot', TPOTRegressor, {'generations': 5, 'population_size': 20, 'random_state': 42, 'verbosity': 0})
+                self.register('classification', 'tpot', TPOTClassifier, {'generations': 5, 'population_size': 20, 'random_state': 42, 'verbosity': 0})
+                
+                logger.info("TPOT統合成功: TPOTRegressor, TPOTClassifier")
+            except ImportError as e:
+                logger.warning(f"TPOTインポート失敗: {e}")
+        
+        # ===== Auto-sklearn =====
+        if AVAILABLE_LIBRARIES['autosklearn']:
+            try:
+                import autosklearn.regression
+                import autosklearn.classification
+                
+                self.register('regression', 'autosklearn', autosklearn.regression.AutoSklearnRegressor, {'time_left_for_this_task': 120, 'per_run_time_limit': 30})
+                self.register('classification', 'autosklearn', autosklearn.classification.AutoSklearnClassifier, {'time_left_for_this_task': 120, 'per_run_time_limit': 30})
+                
+                logger.info("Auto-sklearn統合成功: AutoSklearnRegressor, AutoSklearnClassifier")
+            except ImportError as e:
+                logger.warning(f"Auto-sklearnインポート失敗: {e}")
+        
+        # ===== pykan (Kolmogorov-Arnold Networks) =====
+        if AVAILABLE_LIBRARIES['pykan']:
+            try:
+                from kan import KAN
+                
+                self.register('regression', 'kan', KAN, {'width': [2, 5, 1], 'grid': 5, 'k': 3})
+                
+                logger.info("pykan統合成功: KAN (Kolmogorov-Arnold Networks)")
+            except ImportError as e:
+                logger.warning(f"pykanインポート失敗: {e}")
+        
+        # ===== Prophet (時系列) =====
+        if AVAILABLE_LIBRARIES['prophet']:
+            try:
+                # Prophetはラッパークラスで対応（timeseries_models.py）
+                logger.info("Prophet検出されました（時系列専用、timeseries_models.pyで対応）")
+            except Exception as e:
+                logger.warning(f"Prophetインポート失敗: {e}")
 
     
     def register(

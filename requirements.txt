@@ -44,73 +44,190 @@ pytest-cov>=4.1
 # pip install gpt4all
 
 # ========================================
-# Optional: Advanced ML Libraries (25+ libraries)
+# Optional: Advanced ML Libraries (80+ libraries)
 # ========================================
 
-# === Interpretable ML ===
-# imodels>=1.3  # RuleFit, GreedyRuleList, BayesianRuleList, FIGS, HSTree
-# wittgenstein>=0.3  # RIPPER/IREP rule-based algorithms
-# skope-rules>=1.0  # Rule extraction
-# corels  # Certifiably Optimal RulE ListS (requires compilation)
-# anchor-exp>=0.0.2  # Anchor explanations
-# alibi>=0.9  # Algorithm explanations
+# === Core Boosting (推奨インストール) ===
+xgboost>=2.0
+lightgbm>=4.0
+catboost>=1.2  # カテゴリ特徴量最適化
+ngboost>=0.4   # 確率的勾配ブースティング
 
-# === Tree Models (Specialized) ===
-# rgf-python>=3.12  # Regularized Greedy Forest
-# linear-tree>=0.3  # Linear Tree Models (hybrid)
-# node-network  # Neural Oblivious Decision Ensembles
-# pytorch-tabnet>=4.0  # TabNet deep learning
-
-# === GAM (Generalized Additive Models) ===
-# pygam>=0.8  # Generalized Additive Models
-# interpret>=0.5  # Microsoft InterpretML (EBM - Explainable Boosting Machine)
-
-# === Gradient Boosting Extensions ===
-# catboost>=1.2  # CatBoost (categorical features optimized)
-# ngboost>=0.4  # Probabilistic Gradient Boosting
-
-# === Causal Inference ===
-# econml>=0.14  # Microsoft EconML (causal ML)
-# causalml>=0.14  # Uber CausalML
-# dowhy>=0.9  # Causal graph inference
-
-# === Deep Learning (Tabular Data) ===
-# pytorch-tabular>=1.0  # PyTorch for tabular data
-# rtdl>=0.0.13  # Research Tabular Deep Learning
-
-# === Feature Engineering & Selection ===
-# formulaic>=0.6  # R-style model formulas
-# feature-engine>=1.6  # Feature engineering専門
-# boruta>=0.3  # Boruta feature selection
+# === AutoML (自動機械学習) ===
+# autogluon.tabular>=1.0  # AutoGluon（高性能AutoML）
+# tabpfn>=0.1             # TabPFN（事前学習済みモデル）
+# tpot>=0.12              # 遺伝的アルゴリズムAutoML
+# auto-sklearn>=0.15      # Auto-sklearn
+# pycaret>=3.0            # PyCaret（ローコードML）
+# autokeras>=1.1          # AutoKeras（KerasベースAutoML）
 
 # === Hyperparameter Optimization ===
-optuna>=3.5  # Optuna HPO framework
-# optuna-integration  # Additional integrations
+optuna>=3.5                # Optuna（推奨）
+# optuna-integration        # Optuna統合パッケージ
+# sklearn-genetic-opt>=0.9  # 遺伝的アルゴリズムHPO
+# ray[tune]>=2.0            # Ray Tune
+# hyperopt>=0.2.7           # Hyperopt（SMBO）
+# hyperas>=0.4              # Keras用Hyperopt
 
-# === Machine Learning Extensions ===
-mlxtend>=0.22  # ML extensions (Stacking/Voting/Sequential FS/Plotting)
+# === Interpretable ML (解釈可能ML) ===
+# imodels>=1.3              # RuleFit, GreedyRuleList, FIGS, HSTree
+# wittgenstein>=0.3         # RIPPER/IREP
+# skope-rules>=1.0          # ルール抽出
+# interpret>=0.5            # Microsoft InterpretML（EBM）
+# pygam>=0.8                # 一般化加法モデル
+
+# === Tree Models (Specialized) ===
+# rgf-python>=3.12          # Regularized Greedy Forest（推奨）
+# linear-tree>=0.3          # Linear Tree（推奨）
+# pytorch-tabnet>=4.0       # TabNet
+# quantile-forest>=1.0      # 分位点ランダムフォレスト
+# bartpy                    # BART（GitHubから）
+
+# === Linear Models (Advanced) ===
+# asgl>=1.0                 # AdaptiveLasso, GroupLasso, SparseGroupLasso
+
+# === Neural Networks (Advanced) ===
+# pykan>=0.1                # Kolmogorov-Arnold Networks
+# grownet                   # Gradient Boosting Neural Networks
+
+# === Feature Engineering ===
+# feature-engine>=1.6       # 特徴量エンジニアリング専門
+# featuretools>=1.0         # 自動特徴量生成
+# category-encoders>=2.6    # カテゴリ変数エンコーディング
+# autofeat>=2.0             # 自動特徴量エンジニアリング
+
+# === Feature Selection ===
+# boruta>=0.3               # Boruta
+# borutashap>=1.0           # BorutaShap
+# sklearn-genetic>=0.5      # 遺伝的アルゴリズム変数選択
+# sklearn-genetic-opt>=0.9  # 遺伝的アルゴリズムHPO+変数選択
+# sklearn-rebate>=0.6       # ReliefF
+# zoofs>=0.1                # Grey Wolf Algorithm
+# boostaroota>=1.2          # Boruta類似
+mlxtend>=0.22              # Sequential FS（推奨インストール）
+# scikit-feature            # 40+変数選択手法
+
+# === Preprocessing (前処理) ===
+# miceforest>=5.0           # 欠損値補完（MICE）
+# missingpy>=0.2            # 欠損値補完
+# datawig>=0.2              # 欠損値補完（AWS）
+
+# === Time Series (時系列) ===
+# prophet>=1.1              # Facebook Prophet
+# tsfresh>=0.20             # 時系列特徴量抽出
+# hcrystalball>=0.1         # 時系列AutoML
+# statsmodels>=0.14         # ARIMA, SARIMA
+
+# === Clustering & Dimensionality Reduction ===
+umap-learn>=0.5            # UMAP（既存）
+# trimap>=1.0               # TriMap
+# pacmap>=0.6               # PaCMAP
+# parametric-umap           # Parametric UMAP
+
+# === XAI (説明可能AI) ===
+shap>=0.44                 # SHAP（既存）
+# sage-importance           # SAGE（GitHubから推奨）
+# gamma-facet               # FACET
+# interpret>=0.5            # InterpretML（再掲）
+# sklearn-gbmi              # Gradient Boosting H統計量
+
+# === Causal Inference (因果推論) ===
+# econml>=0.14              # Microsoft EconML
+# causalml>=0.14            # Uber CausalML
+# dowhy>=0.9                # 因果グラフ推論
+
+# === Deep Learning (Tabular) ===
+# pytorch-tabular>=1.0      # PyTorch Tabular
+# rtdl>=0.0.13              # Research Tabular DL
+# pytorch-tabnet>=4.0       # TabNet（再掲）
+
+# === Visualization ===
+matplotlib>=3.7            # 既存
+seaborn>=0.12              # 既存
+# dtreeplt>=0.1             # 決定木可視化（graphviz不要）
+# dtreeviz>=2.2             # 決定木可視化（スタイリッシュ）
+
+# === Optimization & Inverse Problems ===
+# deap>=1.4                 # 遺伝的アルゴリズム
+# pyevolve                  # 遺伝的アルゴリズム
+# GPy>=1.10                 # Gaussian Process
+# GPyOpt>=1.2               # ベイズ最適化
+# physbo>=2.0               # ベイズ最適化（COMBO後継）
+
+# === Model Stacking & Ensembling ===
+# heamy>=0.0.7              # Stacking/Blending
+# pystacknet               # StackNet
+
+# === Utilities ===
+# scikit-lego>=0.6          # scikit-learn拡張
+# scikit-plot>=0.3          # 可視化ヘルパー
+# scikit-learn-extra>=0.2   # scikit-learn追加アルゴリズム
+# atom-ml>=5.0              # scikit-learn高速化
+
+# === Evaluation ===
+# tibfold                   # Tibshirani法（ダブルCV不要）
+
+# === Other ===
+h5py>=3.8                  # モデル保存・読込
 
 # ========================================
-# Installation Commands
+# カテゴリ別インストールコマンド
 # ========================================
 
-# Install Core Advanced ML (recommended):
-# pip install imodels rgf-python linear-tree catboost ngboost optuna
+# 【推奨】Core Advanced ML（まずこれをインストール）:
+# pip install xgboost lightgbm catboost ngboost optuna mlxtend
 
-# Install Interpretable ML Suite:
-# pip install imodels wittgenstein skope-rules interpret pygam
+# 【AutoML Suite】:
+# pip install tpot optuna sklearn-genetic-opt
 
-# Install Causal Inference Suite:
+# 【Interpretable ML Suite】:
+# pip install imodels interpret pygam
+
+# 【Feature Engineering Suite】:
+# pip install feature-engine category-encoders mlxtend
+
+# 【Feature Selection Suite】:
+# pip install boruta mlxtend sklearn-genetic-opt
+
+# 【Time Series Suite】:
+# pip install prophet tsfresh statsmodels
+
+# 【XAI Suite】:
+# pip install shap interpret
+
+# 【Causal Inference Suite】:
 # pip install econml causalml dowhy
 
-# Install Deep Learning for Tabular:
-# pip install pytorch-tabnet pytorch-tabular
+# 【Deep Learning for Tabular】:
+# pip install pytorch-tabnet
 
-# Install ALL optional libraries (may take time):
-# pip install imodels wittgenstein skope-rules interpret pygam \
-#             rgf-python linear-tree catboost ngboost \
-#             econml causalml dowhy \
-#             pytorch-tabnet pytorch-tabular rtdl \
-#             formulaic feature-engine boruta optuna
+# 【Optimization Suite】:
+# pip install optuna deap GPy GPyOpt
 
-# Note: Some libraries (corels, node-network) may require additional setup
+# 【ALL Optional Libraries（フルインストール、推奨環境: conda）】:
+# pip install xgboost lightgbm catboost ngboost \
+#             optuna mlxtend \
+#             rgf-python linear-tree \
+#             imodels interpret pygam \
+#             feature-engine category-encoders \
+#             boruta \
+#             prophet tsfresh statsmodels \
+#             shap \
+#             pytorch-tabnet
+
+# ========================================
+# 注意事項
+# ========================================
+# - 一部ライブラリ（corels, node-network, bartpy）は追加セットアップが必要
+# - GitHubから直接インストールが推奨されるもの: sage-importance, bartpy
+# - Windowsでコンパイルエラーが出る場合: conda経由でインストール
+# - プロキシ環境: pip.ini または --proxy オプションを使用
+
+# ========================================
+# 企業環境（プロキシ）でのインストール
+# ========================================
+# pip install --proxy http://proxy.company.com:8080 package_name
+
+# または、pip.ini（Windows: ~/pip/pip.ini）に設定:
+# [global]
+# proxy = http://proxy.company.com:8080

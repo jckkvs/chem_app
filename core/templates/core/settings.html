@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}モデル・プロキシ設定{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">🔧 モデル・プロキシ設定</h1>
+
+    <!-- プロキシ設定セクション -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-2xl font-semibold mb-4">🌐 プロキシ設定</h2>
+
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">企業環境でご利用の方へ</h3>
+                    <p class="mt-2 text-sm text-blue-700">
+                        Zscaler等のプロキシ経由でインターネットに接続している場合は、以下の設定が必要です。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <form id="proxy-form" class="space-y-4">
+            <div>
+                <label for="http-proxy" class="block text-sm font-medium text-gray-700 mb-2">
+                    HTTPプロキシ
+                </label>
+                <input type="text" id="http-proxy" name="http_proxy"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="http://proxy.company.com:8080" value="{{ current_proxy.http_proxy|default:'' }}">
+                <p class="mt-1 text-sm text-gray-500">例: http://proxy.company.com:8080</p>
+            </div>
+
+            <div>
+                <label for="https-proxy" class="block text-sm font-medium text-gray-700 mb-2">
+                    HTTPSプロキシ
+                </label>
+                <input type="text" id="https-proxy" name="https_proxy"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="http://proxy.company.com:8080" value="{{ current_proxy.https_proxy|default:'' }}">
+                <p class="mt-1 text-sm text-gray-500">通常はHTTPプロキシと同じ</p>
+            </div>
+
+            <div class="flex gap-2">
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    保存
+                </button>
+                <button type="button" id="test-proxy-btn"
+                    class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    接続テスト
+                </button>
+                <button type="button" id="clear-proxy-btn"
+                    class="px-6 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition">
+                    クリア
+                </button>
+            </div>
+        </form>
+
+        <div id="proxy-status" class="mt-4"></div>
+    </div>
+
+    <!-- モデル一覧セクション -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-2xl font-semibold mb-4">📦 ダウンロード可能なモデル</h2>
+
+        <div id="models-list" class="space-y-4">
+            <!-- JavaScriptで動的に生成 -->
+        </div>
+    </div>
+
+    <!-- 手動ダウンロードガイド -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-semibold mb-4">📖 手動ダウンロードガイド</h2>
+
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">プロキシが使えない場合</h3>
+                    <p class="mt-2 text-sm text-yellow-700">
+                        セキュリティポリシーでプロキシ経由でもダウンロードできない場合は、手動ダウンロードをご利用ください。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="prose max-w-none">
+            <h3>手動ダウンロード手順：</h3>
+            <ol class="text-gray-700">
+                <li>上記の「モデル一覧」から、ダウンロードしたいモデルの「手動ダウンロード」ボタンをクリック</li>
+                <li>表示されたURLにブラウザでアクセスし、ファイルをダウンロード</li>
+                <li>ダウンロードしたファイルを、指定されたパスに配置</li>
+                <li>画面をリロードして、モデルが認識されたことを確認</li>
+            </ol>
+
+            <h3>配置先ディレクトリ：</h3>
+            <div class="bg-gray-100 p-4 rounded font-mono text-sm">
+                {{ cache_dir }}
+            </div>
+
+            <h3>よくある質問：</h3>
+            <dl class="space-y-2">
+                <dt class="font-semibold">Q: ダウンロードしたファイル名が違う</dt>
+                <dd class="text-gray-700 ml-4">A: ファイル名を指定されたものにリネームしてください。</dd>
+
+                <dt class="font-semibold">Q: ディレクトリ型のモデルの配置方法は？</dt>
+                <dd class="text-gray-700 ml-4">A: ダウンロードしたフォルダ全体を、指定されたパスに配置してください。</dd>
+
+                <dt class="font-semibold">Q: モデルが認識されない</dt>
+                <dd class="text-gray-700 ml-4">A: ファイルパス、ファイル名、ディレクトリ構造を確認してください。</dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- キャッシュ情報 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+        <h2 class="text-2xl font-semibold mb-4">💾 キャッシュ情報</h2>
+        <div id="cache-info" class="grid grid-cols-3 gap-4">
+            <!-- JavaScriptで動的に生成 -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // プロキシフォーム送信
+    document.getElementById('proxy-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const data = {
+            http_proxy: formData.get('http_proxy'),
+            https_proxy: formData.get('https_proxy'),
+        };
+
+        try {
+            const res = await fetch('/api/settings/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            const result = await res.json();
+
+            if (res.ok) {
+                showStatus('success', 'プロキシ設定を保存しました');
+            } else {
+                showStatus('error', result.error || '保存に失敗しました');
+            }
+        } catch (err) {
+            showStatus('error', `エラー: ${err.message}`);
+        }
+    });
+
+    // プロキシ接続テスト
+    document.getElementById('test-proxy-btn').addEventListener('click', async () => {
+        showStatus('info', '接続テスト中...');
+
+        try {
+            const res = await fetch('/api/settings/proxy/test');
+            const result = await res.json();
+
+            if (result.success) {
+                showStatus('success', '✅ プロキシ経由で接続できました');
+            } else {
+                showStatus('error', `❌ 接続失敗: ${result.error}`);
+            }
+        } catch (err) {
+            showStatus('error', `テスト失敗: ${err.message}`);
+        }
+    });
+
+    // プロキシクリア
+    document.getElementById('clear-proxy-btn').addEventListener('click', () => {
+        document.getElementById('http-proxy').value = '';
+        document.getElementById('https-proxy').value = '';
+        showStatus('info', 'フォームをクリアしました');
+    });
+
+    // モデル一覧読み込み
+    async function loadModels() {
+        try {
+            const res = await fetch('/api/models/list');
+            const models = await res.json();
+
+            const container = document.getElementById('models-list');
+            container.innerHTML = models.map(model => `
+            <div class="border rounded-lg p-4 ${model.status === 'downloaded' ? 'bg-green-50' : 'bg-gray-50'}">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold">${model.name}</h3>
+                        <p class="text-gray-600 text-sm">${model.description}</p>
+                        <div class="mt-2 flex gap-2 text-xs">
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                                ${model.size_mb} MB
+                            </span>
+                            <span class="px-2 py-1 ${getStatusClass(model.status)} rounded">
+                                ${getStatusText(model.status)}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${getActionButtons(model)}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        } catch (err) {
+            console.error('モデル一覧の読み込みに失敗:', err);
+        }
+    }
+
+    function getStatusClass(status) {
+        switch (status) {
+            case 'downloaded': return 'bg-green-100 text-green-800';
+            case 'incomplete': return 'bg-yellow-100 text-yellow-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    }
+
+    function getStatusText(status) {
+        switch (status) {
+            case 'downloaded': return '✅ ダウンロード済み';
+            case 'incomplete': return '⚠️ 不完全';
+            default: return '📥 未ダウンロード';
+        }
+    }
+
+    function getActionButtons(model) {
+        if (model.status === 'downloaded') {
+            return `<button onclick="deleteModel('${model.id}')" class="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm">削除</button>`;
+        } else {
+            return `
+            <button onclick="downloadModel('${model.id}')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                ダウンロード
+            </button>
+            <button onclick="showManualInstructions('${model.id}')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">
+                手動ダウンロード
+            </button>
+        `;
+        }
+    }
+
+    async function downloadModel(modelId) {
+        if (!confirm('このモデルをダウンロードしますか？（数百MBのデータ量になる場合があります）')) {
+            return;
+        }
+
+        showStatus('info', 'ダウンロード中... (数分かかる場合があります)');
+
+        try {
+            const res = await fetch(`/api/models/download/${modelId}`, { method: 'POST' });
+            const result = await res.json();
+
+            if (result.success) {
+                showStatus('success', result.message);
+                loadModels();  // 再読み込み
+            } else {
+                showStatus('error', result.message);
+            }
+        } catch (err) {
+            showStatus('error', `ダウンロード失敗: ${err.message}`);
+        }
+    }
+
+    async function deleteModel(modelId) {
+        if (!confirm('このモデルを削除しますか？')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/models/delete/${modelId}`, { method: 'DELETE' });
+            const result = await res.json();
+
+            if (result.success) {
+                showStatus('success', result.message);
+                loadModels();  // 再読み込み
+            } else {
+                showStatus('error', result.message);
+            }
+        } catch (err) {
+            showStatus('error', `削除失敗: ${err.message}`);
+        }
+    }
+
+    async function showManualInstructions(modelId) {
+        try {
+            const res = await fetch(`/api/models/manual/${modelId}`);
+            const instructions = await res.json();
+
+            // モーダル表示（簡易実装）
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+            modal.innerHTML = `
+            <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-screen overflow-y-auto">
+                <h2 class="text-2xl font-bold mb-4">${instructions.model_name} - 手動ダウンロード手順</h2>
+                <div class="prose">
+                    <pre class="bg-gray-100 p-4 rounded whitespace-pre-wrap text-sm">${instructions.instructions}</pre>
+                </div>
+                <button onclick="this.closest('.fixed').remove()" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    閉じる
+                </button>
+            </div>
+        `;
+            document.body.appendChild(modal);
+        } catch (err) {
+            showStatus('error', `情報取得失敗: ${err.message}`);
+        }
+    }
+
+    async function loadCacheInfo() {
+        try {
+            const res = await fetch('/api/models/cache');
+            const info = await res.json();
+
+            document.getElementById('cache-info').innerHTML = `
+            <div class="text-center">
+                <div class="text-3xl font-bold text-blue-600">${info.file_count}</div>
+                <div class="text-sm text-gray-600">ファイル数</div>
+            </div>
+            <div class="text-center">
+                <div class="text-3xl font-bold text-green-600">${info.total_size_mb.toFixed(1)} MB</div>
+                <div class="text-sm text-gray-600">合計サイズ</div>
+            </div>
+            <div class="text-center">
+                <div class="text-sm text-gray-600">キャッシュディレクトリ</div>
+                <div class="text-xs font-mono bg-gray-100 p-2 rounded mt-1">${info.cache_dir}</div>
+            </div>
+        `;
+        } catch (err) {
+            console.error('キャッシュ情報の読み込みに失敗:', err);
+        }
+    }
+
+    function showStatus(type, message) {
+        const container = document.getElementById('proxy-status');
+        const colors = {
+            success: 'bg-green-100 text-green-800 border-green-500',
+            error: 'bg-red-100 text-red-800 border-red-500',
+            info: 'bg-blue-100 text-blue-800 border-blue-500',
+        };
+
+        container.innerHTML = `
+        <div class="border-l-4 p-4 ${colors[type]}" role="alert">
+            <p>${message}</p>
+        </div>
+    `;
+
+        setTimeout(() => { container.innerHTML = ''; }, 5000);
+    }
+
+    // ページロード時に実行
+    document.addEventListener('DOMContentLoaded', () => {
+        loadModels();
+        loadCacheInfo();
+    });
+</script>
+{% endblock %}

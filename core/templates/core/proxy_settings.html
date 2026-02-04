@@ -1,0 +1,553 @@
+{% extends "base.html" %}
+
+{% block title %}プロキシ・モデル設定{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-2">🔧 プロキシ・モデル設定</h1>
+    <p class="text-gray-600 mb-6">企業環境（Zscaler等）でのプロキシ設定とモデル管理</p>
+
+    <!-- タブナビゲーション -->
+    <div class="mb-6 border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+            <button onclick="switchTab('proxy')" id="tab-proxy"
+                class="tab-button active border-b-2 border-blue-500 py-4 px-1 text-sm font-medium text-blue-600">
+                🌐 プロキシ設定
+            </button>
+            <button onclick="switchTab('ssl')" id="tab-ssl"
+                class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                🔒 SSL証明書
+            </button>
+            <button onclick="switchTab('tools')" id="tab-tools"
+                class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                🛠️ ツール設定
+            </button>
+            <button onclick="switchTab('models')" id="tab-models"
+                class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                📦 モデル管理
+            </button>
+        </nav>
+    </div>
+
+    <!-- プロキシ設定タブ -->
+    <div id="content-proxy" class="tab-content">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">🌐 プロキシ設定</h2>
+
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                <h3 class="text-sm font-medium text-blue-800 mb-2">企業環境でご利用の方へ</h3>
+                <p class="text-sm text-blue-700">
+                    Zscaler、Forcepoint等のプロキシ経由でインターネットに接続している場合は、以下の設定が必要です。<br>
+                    プロキシを使用していない方は、この設定をスキップしてください。
+                </p>
+            </div>
+
+            <form id="proxy-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="http-proxy" class="block text-sm font-medium text-gray-700 mb-2">
+                            HTTPプロキシ <span class="text-gray-400 font-normal">(必須)</span>
+                        </label>
+                        <input type="text" id="http-proxy" name="http_proxy"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="http://proxy.company.com:8080">
+                        <p class="mt-1 text-xs text-gray-500">例: http://proxy.company.com:8080</p>
+                    </div>
+
+                    <div>
+                        <label for="https-proxy" class="block text-sm font-medium text-gray-700 mb-2">
+                            HTTPSプロキシ <span class="text-gray-400 font-normal">(通常は同じ)</span>
+                        </label>
+                        <input type="text" id="https-proxy" name="https_proxy"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="http://proxy.company.com:8080">
+                        <p class="mt-1 text-xs text-gray-500">通常はHTTPプロキシと同じ値</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-4">
+                    <button type="submit"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        💾 保存
+                    </button>
+                    <button type="button" id="test-proxy-btn"
+                        class="px-6 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition">
+                        ✅ 接続テスト
+                    </button>
+                    <button type="button" id="copy-proxy-btn"
+                        class="px-6 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition">
+                        📋 HTTPSにコピー
+                    </button>
+                    <button type="button" id="clear-proxy-btn"
+                        class="px-6 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition">
+                        🗑️ クリア
+                    </button>
+                </div>
+            </form>
+
+            <div id="proxy-status" class="mt-4"></div>
+        </div>
+
+        <!-- 現在の設定表示 -->
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h3 class="font-semibold mb-2">📋 現在の環境変数</h3>
+            <div id="current-env" class="font-mono text-xs space-y-1"></div>
+        </div>
+    </div>
+
+    <!-- SSL証明書タブ -->
+    <div id="content-ssl" class="tab-content hidden">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">🔒 SSL証明書設定</h2>
+
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
+                <h3 class="text-sm font-medium text-yellow-800 mb-2">Zscaler等をご利用の方へ</h3>
+                <p class="text-sm text-yellow-700">
+                    SSL検査を行うプロキシ（Zscaler、Forcepoint等）をご利用の場合、企業提供のSSL証明書ファイルをここで設定してください。<br>
+                    証明書ファイルは通常、情シス部門から配布される .pem または .crt ファイルです。
+                </p>
+            </div>
+
+            <form id="ssl-form" class="space-y-4">
+                <div>
+                    <label for="ssl-cert-path" class="block text-sm font-medium text-gray-700 mb-2">
+                        SSL証明書ファイルパス
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="ssl-cert-path" name="ssl_cert_path"
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="C:\Users\YourName\zscaler_cert.pem">
+                        <button type="button" onclick="document.getElementById('ssl-file-input').click()"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                            📁 参照
+                        </button>
+                    </div>
+                    <input type="file" id="ssl-file-input" accept=".pem,.crt,.cer" class="hidden"
+                        onchange="document.getElementById('ssl-cert-path').valueOf = this.files[0]?.path || ''">
+                    <p class="mt-1 text-xs text-gray-500">例: C:\Users\YourName\zscaler_root.pem</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="ssl-verify" name="ssl_verify" checked class="rounded text-blue-600">
+                    <label for="ssl-verify" class="text-sm text-gray-700">
+                        SSL検証を有効化（推奨）
+                    </label>
+                </div>
+
+                <div class="bg-red-50 border border-red-200 rounded p-3">
+                    <label class="flex items-start gap-2 text-sm">
+                        <input type="checkbox" id="disable-ssl-verify" class="mt-0.5">
+                        <span class="text-red-700">
+                            <strong>⚠️ SSL検証を完全に無効化（非推奨）</strong><br>
+                            セキュリティリスクがあります。開発/テスト環境でのみ使用してください。
+                        </span>
+                    </label>
+                </div>
+
+                <div class="flex gap-2 pt-4">
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        💾 保存
+                    </button>
+                    <button type="button" id="test-ssl-btn"
+                        class="px-6 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200">
+                        ✅ 証明書テスト
+                    </button>
+                </div>
+            </form>
+
+            <div id="ssl-status" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- ツール設定タブ -->
+    <div id="content-tools" class="tab-content hidden">
+        <div class="space-y-6">
+            <!-- Conda設定 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-semibold mb-4">🐍 Conda / Miniconda 設定</h2>
+                <p class="text-gray-600 mb-4">Conda環境でパッケージインストールする場合の設定（.condarc）</p>
+
+                <form id="conda-form" class="space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="checkbox" id="conda-use-proxy" checked class="rounded text-blue-600">
+                        <label for="conda-use-proxy" class="text-sm font-medium">
+                            プロキシ設定を .condarc に反映
+                        </label>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="conda-ssl-verify" checked class="rounded text-blue-600">
+                        <label for="conda-ssl-verify" class="text-sm">
+                            SSL検証を有効化
+                        </label>
+                    </div>
+
+                    <div class="bg-gray-50 rounded p-3 text-sm font-mono">
+                        <div class="text-gray-600 mb-1">設定ファイル:</div>
+                        <div id="condarc-path" class="text-gray-800"></div>
+                    </div>
+
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        💾 .condarc を更新
+                    </button>
+                </form>
+
+                <div id="conda-status" class="mt-4"></div>
+            </div>
+
+            <!-- pip設定 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-semibold mb-4">📦 pip 設定</h2>
+                <p class="text-gray-600 mb-4">pipでパッケージインストールする場合の設定（pip.conf / pip.ini）</p>
+
+                <form id="pip-form" class="space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="checkbox" id="pip-use-proxy" checked class="rounded text-blue-600">
+                        <label for="pip-use-proxy" class="text-sm font-medium">
+                            プロキシ設定を pip設定 に反映
+                        </label>
+                    </div>
+
+                    <div>
+                        <label for="pip-trusted-host" class="block text-sm font-medium text-gray-700 mb-2">
+                            信頼するホスト（オプション）
+                        </label>
+                        <input type="text" id="pip-trusted-host"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                            placeholder="pypi.org pypi.python.org">
+                        <p class="mt-1 text-xs text-gray-500">SSL検証をスキップするホスト（スペース区切り）</p>
+                    </div>
+
+                    <div class="bg-gray-50 rounded p-3 text-sm font-mono">
+                        <div class="text-gray-600 mb-1">設定ファイル:</div>
+                        <div id="pip-config-path" class="text-gray-800"></div>
+                    </div>
+
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        💾 pip設定を更新
+                    </button>
+                </form>
+
+                <div id="pip-status" class="mt-4"></div>
+            </div>
+
+            <!-- 環境変数エクスポート -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-semibold mb-4">📝 環境変数スクリプト</h2>
+                <p class="text-gray-600 mb-4">他のターミナルやアプリケーションで使用できる環境変数設定スクリプトを生成</p>
+
+                <div class="bg-blue-50 rounded p-4 mb-4">
+                    <p class="text-sm text-blue-800">
+                        <strong>使い方:</strong><br>
+                        Windows: ダブルクリックで実行、または <code class="bg-blue-100 px-1">call chemml_proxy_env.bat</code><br>
+                        Linux/Mac: <code class="bg-blue-100 px-1">source chemml_proxy_env.sh</code>
+                    </p>
+                </div>
+
+                <button id="export-env-btn" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                    📥 スクリプトをエクスポート
+                </button>
+
+                <div id="export-status" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モデル管理タブ -->
+    <div id="content-models" class="tab-content hidden">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">📦 ダウンロード可能なモデル</h2>
+            <p class="text-gray-600 mb-4">深層学習モデル（Uni-Mol、ChemBERTa等）のダウンロード・管理</p>
+
+            <div id="models-list" class="space-y-4">
+                <!-- JavaScriptで動的生成 -->
+            </div>
+        </div>
+
+        <!-- キャッシュ情報 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-2xl font-semibold mb-4">💾 キャッシュ情報</h2>
+            <div id="cache-info" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- JavaScriptで動的生成 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // タブ切り替え
+    function switchTab(tab) {
+        // すべてのタブボタンを非アクティブ化
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+            btn.classList.add('border-transparent', 'text-gray-500');
+        });
+
+        // すべてのコンテンツを非表示
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+
+        // 選択されたタブをアクティブ化
+        const activeBtn = document.getElementById(`tab-${tab}`);
+        activeBtn.classList.add('active', 'border-blue-500', 'text-blue-600');
+        activeBtn.classList.remove('border-transparent', 'text-gray-500');
+
+        // 対応するコンテンツを表示
+        document.getElementById(`content-${tab}`).classList.remove('hidden');
+    }
+
+    // プロキシフォーム送信
+    document.getElementById('proxy-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            http_proxy: document.getElementById('http-proxy').value,
+            https_proxy: document.getElementById('https-proxy').value,
+        };
+
+        try {
+            const res = await fetch('/api/settings/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            const result = await res.json();
+            showStatus('proxy', res.ok ? 'success' : 'error', result.message || 'プロキシ設定を保存しました');
+            if (res.ok) loadCurrentEnv();
+        } catch (err) {
+            showStatus('proxy', 'error', `エラー: ${err.message}`);
+        }
+    });
+
+    // HTTPSにコピー
+    document.getElementById('copy-proxy-btn').addEventListener('click', () => {
+        document.getElementById('https-proxy').value = document.getElementById('http-proxy').value;
+    });
+
+    // プロキシクリア
+    document.getElementById('clear-proxy-btn').addEventListener('click', () => {
+        document.getElementById('http-proxy').value = '';
+        document.getElementById('https-proxy').value = '';
+    });
+
+    // プロキシ接続テスト
+    document.getElementById('test-proxy-btn').addEventListener('click', async () => {
+        showStatus('proxy', 'info', '接続テスト中...');
+        try {
+            const res = await fetch('/api/settings/proxy/test');
+            const result = await res.json();
+            showStatus('proxy', result.success ? 'success' : 'error', result.message || result.error);
+        } catch (err) {
+            showStatus('proxy', 'error', `テスト失敗: ${err.message}`);
+        }
+    });
+
+    // SSL証明書フォーム
+    document.getElementById('ssl-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            ssl_cert_path: document.getElementById('ssl-cert-path').value,
+            ssl_verify: document.getElementById('ssl-verify').checked,
+            disable_ssl_verify: document.getElementById('disable-ssl-verify').checked,
+        };
+
+        try {
+            const res = await fetch('/api/settings/ssl', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            const result = await res.json();
+            showStatus('ssl', res.ok ? 'success' : 'error', result.message);
+        } catch (err) {
+            showStatus('ssl', 'error', `エラー: ${err.message}`);
+        }
+    });
+
+    // Conda設定
+    document.getElementById('conda-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            use_proxy: document.getElementById('conda-use-proxy').checked,
+            ssl_verify: document.getElementById('conda-ssl-verify').checked,
+        };
+
+        try {
+            const res = await fetch('/api/settings/conda', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            const result = await res.json();
+            showStatus('conda', res.ok ? 'success' : 'error', result.message);
+        } catch (err) {
+            showStatus('conda', 'error', `エラー: ${err.message}`);
+        }
+    });
+
+    // pip設定
+    document.getElementById('pip-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            use_proxy: document.getElementById('pip-use-proxy').checked,
+            trusted_host: document.getElementById('pip-trusted-host').value,
+        };
+
+        try {
+            const res = await fetch('/api/settings/pip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            const result = await res.json();
+            showStatus('pip', res.ok ? 'success' : 'error', result.message);
+        } catch (err) {
+            showStatus('pip', 'error', `エラー: ${err.message}`);
+        }
+    });
+
+    // 環境変数エクスポート
+    document.getElementById('export-env-btn').addEventListener('click', async () => {
+        try {
+            const res = await fetch('/api/settings/export-env', { method: 'POST' });
+            const result = await res.json();
+            showStatus('export', res.ok ? 'success' : 'error',
+                res.ok ? `スクリプトを生成しました: ${result.path}` : result.error);
+        } catch (err) {
+            showStatus('export', 'error', `エラー: ${err.message}`);
+        }
+    });
+
+    // モデル一覧読み込み
+    async function loadModels() {
+        try {
+            const res = await fetch('/api/models/list');
+            const models = await res.json();
+
+            document.getElementById('models-list').innerHTML = models.map(m => `
+            <div class="border rounded-lg p-4 ${m.status === 'downloaded' ? 'bg-green-50' : 'bg-gray-50'}">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold">${m.name}</h3>
+                        <p class="text-gray-600 text-sm">${m.description}</p>
+                        <div class="mt-2 flex gap-2 text-xs">
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">${m.size_mb} MB</span>
+                            <span class="px-2 py-1 ${m.status === 'downloaded' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'} rounded">
+                                ${m.status === 'downloaded' ? '✅ ダウンロード済み' : '📥 未ダウンロード'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${m.status === 'downloaded'
+                    ? `<button onclick="deleteModel('${m.id}')" class="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm">削除</button>`
+                    : `<button onclick="downloadModel('${m.id}')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">ダウンロード</button>
+                               <button onclick="showManualInstructions('${m.id}')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">手動DL</button>`
+                }
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        } catch (err) {
+            console.error('モデル一覧読み込み失敗:', err);
+        }
+    }
+
+    async function downloadModel(id) {
+        if (!confirm('ダウンロードしますか？（数百MBの場合があります）')) return;
+        showStatus('proxy', 'info', 'ダウンロード中...');
+        try {
+            const res = await fetch(`/api/models/download/${id}`, { method: 'POST' });
+            const result = await res.json();
+            showStatus('proxy', res.ok ? 'success' : 'error', result.message);
+            if (res.ok) loadModels();
+        } catch (err) {
+            showStatus('proxy', 'error', `エラー: ${err.message}`);
+        }
+    }
+
+    async function deleteModel(id) {
+        if (!confirm('削除しますか？')) return;
+        try {
+            const res = await fetch(`/api/models/delete/${id}`, { method: 'DELETE' });
+            const result = await res.json();
+            showStatus('proxy', res.ok ? 'success' : 'error', result.message);
+            if (res.ok) loadModels();
+        } catch (err) {
+            showStatus('proxy', 'error', `エラー: ${err.message}`);
+        }
+    }
+
+    async function showManualInstructions(id) {
+        try {
+            const res = await fetch(`/api/models/manual/${id}`);
+            const data = await res.json();
+            alert(`${data.model_name}\n\n${data.instructions}`);
+        } catch (err) {
+            alert(`エラー: ${err.message}`);
+        }
+    }
+
+    async function loadCurrentEnv() {
+        try {
+            const res = await fetch('/api/settings/proxy');
+            const data = await res.json();
+            document.getElementById('current-env').innerHTML = `
+            <div>HTTP_PROXY: ${data.http_proxy || '(未設定)'}</div>
+            <div>HTTPS_PROXY: ${data.https_proxy || '(未設定)'}</div>
+            <div>SSL_CERT_FILE: ${data.ssl_cert_file || '(未設定)'}</div>
+        `;
+            document.getElementById('http-proxy').value = data.http_proxy || '';
+            document.getElementById('https-proxy').value = data.https_proxy || '';
+        } catch (err) {
+            console.error('環境変数読み込み失敗:', err);
+        }
+    }
+
+    async function loadCacheInfo() {
+        try {
+            const res = await fetch('/api/models/cache');
+            const info = await res.json();
+            document.getElementById('cache-info').innerHTML = `
+            <div class="text-center p-4 bg-blue-50 rounded">
+                <div class="text-3xl font-bold text-blue-600">${info.file_count}</div>
+                <div class="text-sm text-gray-600">ファイル数</div>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded">
+                <div class="text-3xl font-bold text-green-600">${info.total_size_mb.toFixed(1)} MB</div>
+                <div class="text-sm text-gray-600">合計サイズ</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded">
+                <div class="text-sm text-gray-600 mb-1">キャッシュディレクトリ</div>
+                <div class="text-xs font-mono bg-white p-2 rounded border">${info.cache_dir}</div>
+            </div>
+        `;
+        } catch (err) {
+            console.error('キャッシュ情報読み込み失敗:', err);
+        }
+    }
+
+    function showStatus(section, type, message) {
+        const container = document.getElementById(`${section}-status`);
+        const colors = {
+            success: 'bg-green-100 text-green-800 border-green-500',
+            error: 'bg-red-100 text-red-800 border-red-500',
+            info: 'bg-blue-100 text-blue-800 border-blue-500',
+        };
+        container.innerHTML = `<div class="border-l-4 p-4 ${colors[type]}" role="alert"><p>${message}</p></div>`;
+        setTimeout(() => { container.innerHTML = ''; }, 5000);
+    }
+
+    // ページロード時
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCurrentEnv();
+        loadModels();
+        loadCacheInfo();
+
+        // パス表示
+        const isWindows = navigator.platform.indexOf('Win') > -1;
+        const home = isWindows ? 'C:\\Users\\YourName' : '~';
+        document.getElementById('condarc-path').textContent = `${home}/.condarc`;
+        document.getElementById('pip-config-path').textContent = isWindows ? `${home}\\pip\\pip.ini` : `${home}/.pip/pip.conf`;
+    });
+</script>
+{% endblock %}

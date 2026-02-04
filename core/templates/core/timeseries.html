@@ -1,0 +1,295 @@
+"""
+Django時系列分析テンプレート
+
+Implements: F-DJANGO-TIMESERIES-UI-001
+"""
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}時系列分析 - Chemical ML Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timeseries-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .settings-card {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    .form-control {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+    }
+
+    .info-box {
+        background: #e3f2fd;
+        border-left: 4px solid #2196F3;
+        padding: 16px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+
+    .model-params {
+        background: #f5f5f5;
+        padding: 16px;
+        border-radius: 6px;
+        margin-top: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="timeseries-container">
+    <h1>⏰ 時系列データ分析</h1>
+
+    <div class="info-box">
+        <strong>📊 時系列分析について</strong><br>
+        時間的な順序を持つデータに対して、Prophet、ARIMA、SARIMAなどのモデルを使用して
+        予測・分析を行います。日時カラムと予測対象カラムを選択してください。
+    </div>
+
+    <form id="timeseries-form" method="POST">
+        {% csrf_token %}
+
+        <!-- データ設定 -->
+        <div class="settings-card">
+            <h2>📁 データ設定</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="dataset">データセット選択</label>
+                    <select id="dataset" name="dataset" class="form-control" required>
+                        <option value="">-- 選択してください --</option>
+                        {% for dataset in datasets %}
+                        <option value="{{ dataset.id }}">{{ dataset.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="date_column">日時カラム</label>
+                    <select id="date_column" name="date_column" class="form-control" required>
+                        <option value="">-- データセットを選択してください --</option>
+                    </select>
+                    <small class="text-muted">datetime型のカラムが自動検出されます</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="target_column">予測対象カラム</label>
+                    <select id="target_column" name="target_column" class="form-control" required>
+                        <option value="">-- データセットを選択してください --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- モデル選択 -->
+        <div class="settings-card">
+            <h2>🤖 モデル選択</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="model_type">モデルタイプ</label>
+                    <select id="model_type" name="model_type" class="form-control" required>
+                        <option value="prophet">Prophet（推奨）</option>
+                        <option value="arima">ARIMA</option>
+                        <option value="sarima">SARIMA</option>
+                    </select>
+                    <small class="text-muted">
+                        Prophet: Facebook製、季節性・休日対応<br>
+                        ARIMA: 古典的時系列モデル<br>
+                        SARIMA: 季節性ARIMA
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="forecast_horizon">予測期間（ステップ数）</label>
+                    <input type="number" id="forecast_horizon" name="forecast_horizon" class="form-control" value="30"
+                        min="1" max="1000" required>
+                </div>
+            </div>
+
+            <!-- Prophet専用パラメータ -->
+            <div id="prophet-params" class="model-params">
+                <h3>Prophet パラメータ</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="growth">成長トレンド</label>
+                        <select id="growth" name="growth" class="form-control">
+                            <option value="linear">線形</option>
+                            <option value="logistic">ロジスティック</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="changepoint_prior_scale">変化点感度</label>
+                        <input type="number" id="changepoint_prior_scale" name="changepoint_prior_scale"
+                            class="form-control" value="0.05" min="0.001" max="0.5" step="0.001">
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="yearly_seasonality" checked> 年次季節性
+                        </label>
+                        <label>
+                            <input type="checkbox" name="weekly_seasonality" checked> 週次季節性
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ARIMA/SARIMA専用パラメータ -->
+            <div id="arima-params" class="model-params" style="display:none;">
+                <h3>ARIMA パラメータ</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="p">AR次数 (p)</label>
+                        <input type="number" id="p" name="p" class="form-control" value="1" min="0" max="10">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="d">差分次数 (d)</label>
+                        <input type="number" id="d" name="d" class="form-control" value="1" min="0" max="2">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="q">MA次数 (q)</label>
+                        <input type="number" id="q" name="q" class="form-control" value="1" min="0" max="10">
+                    </div>
+                </div>
+            </div>
+
+            <div id="sarima-params" class="model-params" style="display:none;">
+                <h3>SARIMA 季節性パラメータ</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="P">季節AR (P)</label>
+                        <input type="number" id="P" name="P" class="form-control" value="1" min="0" max="10">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="D">季節差分 (D)</label>
+                        <input type="number" id="D" name="D" class="form-control" value="1" min="0" max="2">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Q">季節MA (Q)</label>
+                        <input type="number" id="Q" name="Q" class="form-control" value="1" min="0" max="10">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="S">周期 (S)</label>
+                        <input type="number" id="S" name="S" class="form-control" value="12" min="1" max="365">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 実行ボタン -->
+        <div class="text-center">
+            <button type="submit" class="btn-primary">
+                🚀 時系列分析を実行
+            </button>
+        </div>
+    </form>
+
+    <!-- 結果表示エリア -->
+    {% if results %}
+    <div class="settings-card" style="margin-top: 30px;">
+        <h2>📊 分析結果</h2>
+        <div id="results">
+            {{ results|safe }}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // データセット選択時にカラム一覧を取得
+    document.getElementById('dataset').addEventListener('change', function () {
+        const datasetId = this.value;
+        if (!datasetId) return;
+
+        fetch(`/api/datasets/${datasetId}/columns/`)
+            .then(response => response.json())
+            .then(data => {
+                // 日時カラム候補
+                const dateSelect = document.getElementById('date_column');
+                dateSelect.innerHTML = '<option value="">-- 選択してください --</option>';
+                data.datetime_columns.forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col + ' (datetime)';
+                    dateSelect.appendChild(option);
+                });
+
+                // 予測対象カラム候補
+                const targetSelect = document.getElementById('target_column');
+                targetSelect.innerHTML = '<option value="">-- 選択してください --</option>';
+                data.numeric_columns.forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    targetSelect.appendChild(option);
+                });
+            });
+    });
+
+    // モデルタイプ選択時にパラメータ表示切替
+    document.getElementById('model_type').addEventListener('change', function () {
+        const modelType = this.value;
+
+        document.getElementById('prophet-params').style.display =
+            modelType === 'prophet' ? 'block' : 'none';
+
+        document.getElementById('arima-params').style.display =
+            (modelType === 'arima' || modelType === 'sarima') ? 'block' : 'none';
+
+        document.getElementById('sarima-params').style.display =
+            modelType === 'sarima' ? 'block' : 'none';
+    });
+</script>
+{% endblock %}

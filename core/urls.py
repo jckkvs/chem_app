@@ -13,10 +13,15 @@ urlpatterns = [
     path('templates', views.templates_page, name='templates'),
     path('inverse-design', views.inverse_design_page, name='inverse_design'),
     path('generate', views.generate_page, name='generate'),
+    path('timeseries', views.timeseries_analysis, name='timeseries'),
+    path('proxy-settings', lambda r: __import__('django.shortcuts', fromlist=['render']).render(r, 'core/proxy_settings.html'), name='proxy_settings'),
     
     # PWA関連
     path('manifest.json', views.manifest, name='manifest'),
     path('sw.js', views.service_worker, name='service_worker'),
+    
+    # API: データセット情報
+    path('api/datasets/<int:dataset_id>/columns/', views.get_dataset_columns, name='dataset_columns'),
     
     # API: ワンクリック予測
     path('api/predict/quick', lambda r: __import__('core.api_views.quick_predict_views', fromlist=['quick_predict']).quick_predict(r), name='quick_predict'),
