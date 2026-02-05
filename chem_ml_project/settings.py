@@ -1,4 +1,5 @@
 import os
+import sys
 import warnings
 from pathlib import Path
 
@@ -9,28 +10,40 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security Settings
 # ==============================================================================
 
+# テスト環境検出（最優先）
+IS_TESTING = 'test' in sys.argv or 'pytest' in sys.modules
+
 # SECRET_KEY: Must be set via environment variable
 # Generate with: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
-if not SECRET_KEY:
-    # デフォルト値は開発環境のみ許可
-    if os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes'):
-        warnings.warn(
-            "DJANGO_SECRET_KEY not set. Using insecure default for development only. "
-            "Set DJANGO_SECRET_KEY environment variable for production.",
-            RuntimeWarning,
-            stacklevel=2
-        )
-        SECRET_KEY = 'django-insecure-dev-only-DO-NOT-USE-IN-PRODUCTION'
-    else:
-        raise ValueError(
-            "DJANGO_SECRET_KEY environment variable must be set in production. "
-            "Generate with: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
-        )
+if IS_TESTING:
+    # テスト環境: 自動生成されたSECRET_KEYを使用（CI/CD対応）
+    SECRET_KEY = 'test-secret-key-for-ci-cd-and-pytest-do-not-use-in-production'
+else:
+    SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+    
+    if not SECRET_KEY:
+        # デフォルト値は開発環境のみ許可
+        if os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes'):
+            warnings.warn(
+                "DJANGO_SECRET_KEY not set. Using insecure default for development only. "
+                "Set DJANGO_SECRET_KEY environment variable for production.",
+                RuntimeWarning,
+                stacklevel=2
+            )
+            SECRET_KEY = 'django-insecure-dev-only-DO-NOT-USE-IN-PRODUCTION'
+        else:
+            raise ValueError(
+                "DJANGO_SECRET_KEY environment variable must be set in production. "
+                "Generate with: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
+            )
 
-# DEBUG: Environment variable (default: False for safety)
-DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
+
+# DEBUG: Environment variable (default: False for safety, True for testing)
+if IS_TESTING:
+    DEBUG = True  # テスト環境では常にDEBUG=True
+else:
+    DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # ALLOWED_HOSTS: Environment variable (default: localhost only)
 ALLOWED_HOSTS_RAW = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1')
@@ -41,8 +54,7 @@ ALLOWED_HOSTS = [
 ]
 
 # テスト環境用：Django TestCaseのtestserverを許可
-import sys
-if 'test' in sys.argv or 'pytest' in sys.modules:
+if IS_TESTING:
     ALLOWED_HOSTS.append('testserver')
 
 # Application definition
